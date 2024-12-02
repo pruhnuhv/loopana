@@ -1,0 +1,13 @@
+loop_nest:
+  - iter_name: "i"
+    bounds: [0, 10]
+    step: 1
+  - iter_name: "j"
+    bounds: [0, 20]
+    step: 2
+body:
+  accesses: ["i", "j"]
+  duration: 1
+conditionals:
+  - skipped_loops: ["j"]
+    cond_comp_loops: ["i"]
