@@ -1,7 +1,4 @@
-mod affine;
-mod arch;
-mod loop_prob;
-mod mapping;
+mod representations;
 fn main() {
     println!("Hello, world!");
 }

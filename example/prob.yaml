@@ -5,39 +5,37 @@ loop_nest:
     step: 1
   - iter_name: "k"
     step: 1
-    bounds: [0,300]
+    bounds: [0, 300]
   - iter_name: "n"
     bounds: [0, 200]
     step: 1
 body:
-  - name : "load_A"
-    duration: null
+  - !DataAccess
+    name: "load_A"
     access:
       vars:
         "m": 300
         "k": 1
       constant: 0
-  - name : "load_b"
-    duration: null
+  - !DataAccess
+    name: "load_B"
     access:
       vars:
         "k": 200
         "n": 1
       constant: 0
-  - name : "mac"
-    duration: 1
-    access:
-      vars:
-      constant: 0
-  - name : "load_c"
-    duration: null
+  - !DataAccess
+    name: "load_C"
     access:
       vars:
         "m": 200
         "n": 1
       constant: 0
-  - name : "store_c"
-    duration: null
+  - !Compute
+    name: "mac"
+    duration: 1
+  - !DataAccess
+    name: "store_C"
     access:
       vars:
         "m": 200
@@ -45,5 +43,6 @@ body:
       constant: 0
 
 conditionals:
-  - skipped_loops: ["j"]
-    cond_comp_loops: ["i"]
+  - skipped_loops: ["n"]
+    cond_comp_loops: ["m", "k"]
+    prob: 0.5

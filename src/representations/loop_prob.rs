@@ -1,4 +1,4 @@
-use crate::affine::AffineExpression;
+use super::affine_expr::AffineExpression;
 use serde_derive::Deserialize;
 
 #[derive(Debug, Deserialize)]
@@ -16,10 +16,22 @@ pub struct Loop {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Instruction {
+pub enum Instruction {
+    DataAccess(DataAccess),
+    Compute(Compute),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct DataAccess {
     pub name: String,
     pub duration: Option<i32>,
     pub access: AffineExpression,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Compute {
+    pub name: String,
+    pub duration: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -27,6 +39,7 @@ pub struct Conditionals {
     /// the loops that are executed conditionally
     pub skipped_loops: Vec<String>,
     pub cond_comp_loops: Vec<String>,
+    pub prob: f64,
 }
 
 #[cfg(test)]

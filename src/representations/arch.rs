@@ -4,12 +4,39 @@ use serde_derive::Deserialize;
 pub struct Arch {
     pub dims_name: Vec<String>,
     pub dims_shape: Vec<i32>,
-    pub connections: Vec<Connection>,
+    pub pe_arch: PEArch,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Connection {
-    pub direction: Vec<i32>,
+pub struct PEArch {
+    pub data_ports: Vec<DataPort>,
+    pub data_width: i32,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum DataPort {
+    NOC(NOC),
+    Memory(Memory),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NOC {
+    pub name: String,
+    pub topology: Vec<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Memory {
+    pub name: String,
+    pub size: Option<i32>,
+}
+
+pub enum ControlType {
+    SkipNZ,
+    Shuffle,
+}
+pub struct Control {
+    pub ctrl_type: ControlType,
 }
 
 #[cfg(test)]

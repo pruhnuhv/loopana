@@ -1,7 +1,19 @@
 dims_name: ["x", "y", "SIMD"]
 dims_shape: [8, 8, 4]
-connections: 
-  - direction: [0, 1]
-  - direction: [0, -1]
-  - direction: [1, 0]
-  - direction: [-1, 0]
+pe_arch:
+  data_ports:
+    - !NOC
+      name: "NORTH"
+      topology: [0, 1]
+    - !NOC
+      name: "SOUTH"
+      topology: [0, -1]
+    - !NOC
+      name: "WEST"
+      topology: [-1, 0]
+    - !NOC
+      name: "EAST"
+      topology: [1, 0]
+    - !Memory
+      name: "DMem"
+  data_width: 4
