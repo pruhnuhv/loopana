@@ -1,13 +1,49 @@
+# Matmul m x k x n = 100 x 300 x 200
 loop_nest:
-  - iter_name: "i"
-    bounds: [0, 10]
+  - iter_name: "m"
+    bounds: [0, 100]
     step: 1
-  - iter_name: "j"
-    bounds: [0, 20]
-    step: 2
+  - iter_name: "k"
+    step: 1
+    bounds: [0,300]
+  - iter_name: "n"
+    bounds: [0, 200]
+    step: 1
 body:
-  accesses: ["i", "j"]
-  duration: 1
+  - name : "load_A"
+    duration: null
+    access:
+      vars:
+        "m": 300
+        "k": 1
+      constant: 0
+  - name : "load_b"
+    duration: null
+    access:
+      vars:
+        "k": 200
+        "n": 1
+      constant: 0
+  - name : "mac"
+    duration: 1
+    access:
+      vars:
+      constant: 0
+  - name : "load_c"
+    duration: null
+    access:
+      vars:
+        "m": 200
+        "n": 1
+      constant: 0
+  - name : "store_c"
+    duration: null
+    access:
+      vars:
+        "m": 200
+        "n": 1
+      constant: 0
+
 conditionals:
   - skipped_loops: ["j"]
     cond_comp_loops: ["i"]

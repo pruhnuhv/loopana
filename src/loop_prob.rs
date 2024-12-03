@@ -1,9 +1,10 @@
+use crate::affine::AffineExpression;
 use serde_derive::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct LoopProb {
     pub loop_nest: Vec<Loop>,
-    pub body: Statement,
+    pub body: Vec<Instruction>,
     pub conditionals: Vec<Conditionals>,
 }
 
@@ -15,9 +16,10 @@ pub struct Loop {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Statement {
-    pub accesses: Vec<String>,
-    pub duration: i32,
+pub struct Instruction {
+    pub name: String,
+    pub duration: Option<i32>,
+    pub access: AffineExpression,
 }
 
 #[derive(Debug, Deserialize)]

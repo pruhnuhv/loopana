@@ -2,8 +2,10 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::ops::{Add, Mul, Sub};
 
-#[derive(Debug, Clone)]
-struct AffineExpression {
+use serde_derive::Deserialize;
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AffineExpression {
     // Map variable names to their coefficients
     vars: HashMap<String, i32>,
     // The constant term

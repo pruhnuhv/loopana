@@ -10,7 +10,6 @@ pub struct Arch {
 #[derive(Debug, Deserialize)]
 pub struct Connection {
     pub direction: Vec<i32>,
-    pub bandwidth: i32,
 }
 
 #[cfg(test)]

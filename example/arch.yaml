@@ -1,11 +1,7 @@
-dims_name: ["x", "y"]
-dims_shape: [8, 8]
+dims_name: ["x", "y", "SIMD"]
+dims_shape: [8, 8, 4]
 connections: 
   - direction: [0, 1]
-    bandwidth: 4
   - direction: [0, -1]
-    bandwidth: 4
   - direction: [1, 0]
-    bandwidth: 4
   - direction: [-1, 0]
-    bandwidth: 4
