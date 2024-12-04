@@ -2,18 +2,19 @@ dims_name: ["x", "y", "SIMD"]
 dims_shape: [8, 8, 4]
 pe_arch:
   data_ports:
-    - !NOC
+    - !NocPort
       name: "NORTH"
       topology: [0, 1]
-    - !NOC
+    - !NocPort
       name: "SOUTH"
       topology: [0, -1]
-    - !NOC
+    - !NocPort
       name: "WEST"
       topology: [-1, 0]
-    - !NOC
+    - !NocPort
       name: "EAST"
       topology: [1, 0]
-    - !Memory
-      name: "DMem"
+    - !MemoryWritePort
+      name: "DMem_Read"
+      mem_name: "DMem"
   data_width: 4

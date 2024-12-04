@@ -15,20 +15,21 @@ pub struct PEArch {
 
 #[derive(Debug, Deserialize)]
 pub enum DataPort {
-    NOC(NOC),
-    Memory(Memory),
+    NocPort(NocPort),
+    MemoryWritePort(MemoryPort),
+    MemoryReadPort(MemoryPort),
 }
 
 #[derive(Debug, Deserialize)]
-pub struct NOC {
+pub struct NocPort {
     pub name: String,
     pub topology: Vec<i32>,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Memory {
+pub struct MemoryPort {
     pub name: String,
-    pub size: Option<i32>,
+    pub mem_name: String,
 }
 
 pub enum ControlType {
