@@ -14,7 +14,7 @@ pe_arch:
     - !NocPort
       name: "EAST"
       topology: [1, 0]
-    - !MemoryWritePort
-      name: "DMem_Read"
+    - !MemoryReadPort
+      name: "RP1"
       mem_name: "DMem"
   data_width: 4
