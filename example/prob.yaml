@@ -10,39 +10,47 @@ loop_nest:
     bounds: [0, 200]
     step: 1
 body:
-  - !DataAccess
-    name: "load_A"
-    access:
+  - !DataLoad
+    array_name: "A"
+    addr:
       vars:
         "m": 300
         "k": 1
       constant: 0
-  - !DataAccess
-    name: "load_B"
-    access:
+  - !DataLoad
+    array_name: "B"
+    addr:
       vars:
         "k": 200
         "n": 1
       constant: 0
-  - !DataAccess
-    name: "load_C"
-    access:
+  - !DataLoad
+    array_name: "C"
+    addr:
       vars:
         "m": 200
         "n": 1
       constant: 0
   - !Compute
-    name: "mac"
-    duration: 1
-  - !DataAccess
-    name: "store_C"
-    access:
+    op: "mac"
+  - !DataStore
+    array_name: "store_C"
+    addr:
       vars:
         "m": 200
         "n": 1
       constant: 0
 
 conditionals:
-  - skipped_loops: ["n"]
-    cond_comp_loops: ["m", "k"]
+  - cond_comp_loops:
+      - !DataLoad
+        array_name: "load_A"
+        addr:
+          vars:
+            "m": 300
+            "k": 1
+          constant: 0
+      - !Compute
+        op: "cmp"
+    skipped_loops: ["n"]
     prob: 0.5

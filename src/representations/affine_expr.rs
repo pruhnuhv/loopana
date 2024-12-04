@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::ops::{Add, Mul, Sub};
+use std::result;
 
 use serde_derive::Deserialize;
 
@@ -9,7 +10,7 @@ pub struct AffineExpression {
     // Map variable names to their coefficients
     vars: HashMap<String, i32>,
     // The constant term
-    constant: i32,
+    constant: Option<i32>,
 }
 
 impl AffineExpression {
@@ -17,7 +18,7 @@ impl AffineExpression {
     fn new() -> Self {
         AffineExpression {
             vars: HashMap::new(),
-            constant: 0,
+            constant: None,
         }
     }
 
@@ -29,21 +30,8 @@ impl AffineExpression {
 
     // Set the constant term
     fn set_constant(mut self, constant: i32) -> Self {
-        self.constant = constant;
+        self.constant = Some(constant);
         self
-    }
-
-    // Evaluate the expression given a mapping from variables to values
-    fn evaluate(&self, values: &HashMap<String, i32>) -> i32 {
-        let mut result = self.constant;
-        for (var, coeff) in &self.vars {
-            if let Some(value) = values.get(var) {
-                result += coeff * value;
-            } else {
-                panic!("Value for variable '{}' not provided", var);
-            }
-        }
-        result
     }
 }
 
@@ -53,8 +41,10 @@ impl Display for AffineExpression {
         for (var, coeff) in &self.vars {
             terms.push(format!("{}*{}", coeff, var));
         }
-        if self.constant != 0 {
-            terms.push(self.constant.to_string());
+        if self.constant == None || self.constant.unwrap() != 0 {
+            if let Some(constant) = self.constant {
+                terms.push(constant.to_string());
+            }
         }
         write!(f, "{}", terms.join(" + "))
     }
@@ -69,7 +59,9 @@ impl Add for AffineExpression {
         for (var, coeff) in other.vars {
             *result.vars.entry(var).or_insert(0) += coeff;
         }
-        result.constant += other.constant;
+        let self_const = self.constant.unwrap_or(0);
+        let other_const = other.constant.unwrap_or(0);
+        result.constant = Some(self_const + other_const);
         result
     }
 }
@@ -83,7 +75,9 @@ impl Sub for AffineExpression {
         for (var, coeff) in other.vars {
             *result.vars.entry(var).or_insert(0) -= coeff;
         }
-        result.constant -= other.constant;
+        let self_const = self.constant.unwrap_or(0);
+        let other_const = other.constant.unwrap_or(0);
+        result.constant = Some(self_const - other_const);
         result
     }
 }
@@ -97,7 +91,8 @@ impl Mul<i32> for AffineExpression {
         for coeff in result.vars.values_mut() {
             *coeff *= scalar;
         }
-        result.constant *= scalar;
+        let self_const = result.constant.unwrap_or(0);
+        result.constant = Some(self_const * scalar);
         result
     }
 }
@@ -128,9 +123,5 @@ mod tests {
         values.insert("x".to_string(), 1);
         values.insert("y".to_string(), 2);
         values.insert("z".to_string(), 3);
-
-        let result = expr3.evaluate(&values);
-
-        println!("The result of the expression is: {}", result);
     }
 }

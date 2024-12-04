@@ -17,28 +17,29 @@ pub struct Loop {
 
 #[derive(Debug, Deserialize)]
 pub enum Instruction {
-    DataAccess(DataAccess),
+    DataLoad(DataAccess),
+    DataStore(DataAccess),
     Compute(Compute),
 }
 
 #[derive(Debug, Deserialize)]
 pub struct DataAccess {
-    pub name: String,
+    pub array_name: String,
     pub duration: Option<i32>,
-    pub access: AffineExpression,
+    pub addr: AffineExpression,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Compute {
-    pub name: String,
-    pub duration: i32,
+    pub op: String,
+    pub duration: Option<i32>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct Conditionals {
     /// the loops that are executed conditionally
+    pub cond_comp_loops: Vec<Instruction>,
     pub skipped_loops: Vec<String>,
-    pub cond_comp_loops: Vec<String>,
     pub prob: f64,
 }
 
