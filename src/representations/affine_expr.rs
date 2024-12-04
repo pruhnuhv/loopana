@@ -1,127 +1,134 @@
+use nom::{
+    branch::alt,
+    bytes::complete::take_while1,
+    character::complete::{char, digit1, space0},
+    combinator::{map_res, opt},
+    sequence::terminated,
+    IResult,
+};
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
-use std::fmt::Display;
-use std::ops::{Add, Mul, Sub};
-use std::result;
+use std::str::FromStr;
 
-use serde_derive::Deserialize;
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AffineExpression {
-    // Map variable names to their coefficients
-    vars: HashMap<String, i32>,
-    // The constant term
-    constant: Option<i32>,
+/// Represents an affine expression.
+/// It can be a constant, a variable, or an affine combination of variables.
+#[derive(Clone, Debug)]
+pub enum AffineExpr {
+    Const(i32),
+    Var(String),
+    Add(Box<AffineExpr>, Box<AffineExpr>),
+    Sub(Box<AffineExpr>, Box<AffineExpr>),
+    Mul(i32, Box<AffineExpr>),
+    Div(Box<AffineExpr>, i32),
+    Mod(Box<AffineExpr>, i32),
 }
 
-impl AffineExpression {
-    // Create a new affine expression
-    fn new() -> Self {
-        AffineExpression {
-            vars: HashMap::new(),
-            constant: None,
+impl AffineExpr {
+    /// Evaluates the affine expression given a mapping of variable values.
+    fn evaluate(&self, vars: &HashMap<String, i32>) -> i32 {
+        match self {
+            AffineExpr::Const(c) => *c,
+            AffineExpr::Var(name) => *vars.get(name).expect("Variable not found"),
+            AffineExpr::Add(lhs, rhs) => lhs.evaluate(vars) + rhs.evaluate(vars),
+            AffineExpr::Sub(lhs, rhs) => lhs.evaluate(vars) - rhs.evaluate(vars),
+            AffineExpr::Mul(coeff, expr) => coeff * expr.evaluate(vars),
+            AffineExpr::Div(expr, divisor) => expr.evaluate(vars) / divisor,
+            AffineExpr::Mod(expr, modulus) => expr.evaluate(vars) % modulus,
         }
-    }
-
-    // Add a variable with its coefficient
-    fn add_var(mut self, var: &str, coeff: i32) -> Self {
-        *self.vars.entry(var.to_string()).or_insert(0) += coeff;
-        self
-    }
-
-    // Set the constant term
-    fn set_constant(mut self, constant: i32) -> Self {
-        self.constant = Some(constant);
-        self
     }
 }
 
-impl Display for AffineExpression {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut terms = Vec::new();
-        for (var, coeff) in &self.vars {
-            terms.push(format!("{}*{}", coeff, var));
-        }
-        if self.constant == None || self.constant.unwrap() != 0 {
-            if let Some(constant) = self.constant {
-                terms.push(constant.to_string());
-            }
-        }
-        write!(f, "{}", terms.join(" + "))
+impl<'de> Deserialize<'de> for AffineExpr {
+    fn deserialize<D>(deserializer: D) -> Result<AffineExpr, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Deserialize the input as a string
+        let s = String::deserialize(deserializer)?;
+        // Parse the string into an AffineExpr
+        parse_expr(&s)
+            .map(|(_, expr)| expr)
+            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
     }
 }
 
-// Implement addition for AffineExpression
-impl Add for AffineExpression {
-    type Output = Self;
+fn parse_expr(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, initial_term) = parse_term(input)?;
+    parse_expr_tail(input, initial_term)
+}
 
-    fn add(self, other: Self) -> Self {
-        let mut result = self.clone();
-        for (var, coeff) in other.vars {
-            *result.vars.entry(var).or_insert(0) += coeff;
-        }
-        let self_const = self.constant.unwrap_or(0);
-        let other_const = other.constant.unwrap_or(0);
-        result.constant = Some(self_const + other_const);
-        result
+fn parse_expr_tail(input: &str, left: AffineExpr) -> IResult<&str, AffineExpr> {
+    let (input, _) = space0(input)?;
+    if let Ok((input, (op, term))) = parse_add_sub(input) {
+        let expr = match op {
+            '+' => AffineExpr::Add(Box::new(left), Box::new(term)),
+            '-' => AffineExpr::Sub(Box::new(left), Box::new(term)),
+            _ => unreachable!(),
+        };
+        parse_expr_tail(input, expr)
+    } else {
+        Ok((input, left))
     }
 }
 
-// Implement subtraction for AffineExpression
-impl Sub for AffineExpression {
-    type Output = Self;
+fn parse_add_sub(input: &str) -> IResult<&str, (char, AffineExpr)> {
+    let (input, op) = alt((char('+'), char('-')))(input)?;
+    let (input, _) = space0(input)?;
+    let (input, term) = parse_term(input)?;
+    Ok((input, (op, term)))
+}
 
-    fn sub(self, other: Self) -> Self {
-        let mut result = self.clone();
-        for (var, coeff) in other.vars {
-            *result.vars.entry(var).or_insert(0) -= coeff;
-        }
-        let self_const = self.constant.unwrap_or(0);
-        let other_const = other.constant.unwrap_or(0);
-        result.constant = Some(self_const - other_const);
-        result
+fn parse_term(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, _) = space0(input)?;
+    alt((parse_full_term, parse_const))(input)
+}
+
+fn parse_full_term(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, coeff_opt) = opt(terminated(map_res(digit1, i32::from_str), space0))(input)?;
+    let coeff = coeff_opt.unwrap_or(1);
+
+    let (input, var_name) = take_while1(|c: char| c.is_alphabetic())(input)?;
+    let var_expr = if coeff == 1 {
+        AffineExpr::Var(var_name.to_string())
+    } else {
+        AffineExpr::Mul(coeff, Box::new(AffineExpr::Var(var_name.to_string())))
+    };
+
+    let (input, _) = space0(input)?;
+    let (input, div_mod_opt) = opt(parse_div_mod)(input)?;
+    if let Some((op_char, constant)) = div_mod_opt {
+        let expr = match op_char {
+            '/' => AffineExpr::Div(Box::new(var_expr), constant),
+            '%' => AffineExpr::Mod(Box::new(var_expr), constant),
+            _ => unreachable!(),
+        };
+        Ok((input, expr))
+    } else {
+        Ok((input, var_expr))
     }
 }
 
-// Implement scalar multiplication for AffineExpression
-impl Mul<i32> for AffineExpression {
-    type Output = Self;
+fn parse_div_mod(input: &str) -> IResult<&str, (char, i32)> {
+    let (input, op_char) = alt((char('/'), char('%')))(input)?;
+    let (input, _) = space0(input)?;
+    let (input, constant) = map_res(digit1, i32::from_str)(input)?;
+    Ok((input, (op_char, constant)))
+}
 
-    fn mul(self, scalar: i32) -> Self {
-        let mut result = self.clone();
-        for coeff in result.vars.values_mut() {
-            *coeff *= scalar;
-        }
-        let self_const = result.constant.unwrap_or(0);
-        result.constant = Some(self_const * scalar);
-        result
-    }
+fn parse_const(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, number) = map_res(digit1, i32::from_str)(input)?;
+    Ok((input, AffineExpr::Const(number)))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::AffineExpr;
 
     #[test]
-    fn test_affine() {
-        // Create an affine expression: 2x + 3y + 5
-        let expr1 = AffineExpression::new()
-            .add_var("x", 2)
-            .add_var("y", 3)
-            .set_constant(5);
-
-        // Create another affine expression: -x + 4z - 2
-        let expr2 = AffineExpression::new()
-            .add_var("x", -1)
-            .add_var("z", 4)
-            .set_constant(-2);
-
-        // Add the two expressions
-        let expr3 = expr1 + expr2;
-
-        // Evaluate the result with x=1, y=2, z=3
-        let mut values = HashMap::new();
-        values.insert("x".to_string(), 1);
-        values.insert("y".to_string(), 2);
-        values.insert("z".to_string(), 3);
+    fn test_affine_expr_deserialize() {
+        // Read the YAML file (assuming it's in the same directory)
+        let yaml_str = "1x + 2y - 3z";
+        let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
+        println!("{:?}", expr);
     }
 }

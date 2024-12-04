@@ -16,39 +16,24 @@ loops:
 body:
   - !DataLoad
     array_name: "A"
-    addr:
-      vars:
-        "m": 300
-        "k": 1
+    addr: "k + 300m"
   - !DataLoad
     array_name: "B"
-    addr:
-      vars:
-        "k": 200
-        "n": 1
+    addr: "n + 200k"
   - !DataLoad
     array_name: "C"
-    addr:
-      vars:
-        "m": 200
-        "n": 1
+    addr: "n + 200m"
   - !Compute
     op: "mac"
   - !DataStore
     array_name: "store_C"
-    addr:
-      vars:
-        "m": 200
-        "n": 1
+    addr: "n + 200m"
 
 conditionals:
   - cond_comp_loops:
       - !DataLoad
         array_name: "load_A"
-        addr:
-          vars:
-            "m": 300
-            "k": 1
+        addr: "k + 300m"
       - !Compute
         op: "cmp"
     skipped_loops: ["n"]
