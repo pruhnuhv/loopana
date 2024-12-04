@@ -1,4 +1,4 @@
-use crate::representations::loop_prob::Loop;
+use crate::representations::loops::Loop;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 

@@ -1,13 +1,13 @@
 use crate::representations::arch::*;
-use crate::representations::loop_prob::*;
+use crate::representations::loops::*;
 
 struct Mapper {
     arch: Arch,
-    loop_prob: LoopProb,
+    loop_prob: LoopNest,
 }
 
 impl Mapper {
-    pub fn new(arch: Arch, loop_prob: LoopProb) -> Self {
+    pub fn new(arch: Arch, loop_prob: LoopNest) -> Self {
         Self { arch, loop_prob }
     }
 
