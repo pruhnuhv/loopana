@@ -23,6 +23,23 @@ pub enum AffineExpr {
     Mod(Box<AffineExpr>, i32),
 }
 
+impl PartialEq for AffineExpr {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (AffineExpr::Const(a), AffineExpr::Const(b)) => a == b,
+            (AffineExpr::Var(a), AffineExpr::Var(b)) => a == b,
+            (AffineExpr::Add(a1, a2), AffineExpr::Add(b1, b2))
+            | (AffineExpr::Sub(a1, a2), AffineExpr::Sub(b1, b2)) => a1 == b1 && a2 == b2,
+            (AffineExpr::Mul(c1, e1), AffineExpr::Mul(c2, e2)) => c1 == c2 && e1 == e2,
+            (AffineExpr::Div(e1, c1), AffineExpr::Div(e2, c2)) => e1 == e2 && c1 == c2,
+            (AffineExpr::Mod(e1, c1), AffineExpr::Mod(e2, c2)) => e1 == e2 && c1 == c2,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for AffineExpr {}
+
 impl AffineExpr {
     /// Evaluates the affine expression given a mapping of variable values.
     fn evaluate(&self, vars: &HashMap<String, i32>) -> i32 {
@@ -127,8 +144,28 @@ mod tests {
     #[test]
     fn test_deserialize() {
         // Read the YAML file (assuming it's in the same directory)
-        let yaml_str = "1x + 2y - 3z";
+        let yaml_str = "1x + 2y/3 - 3z%5";
         let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
-        println!("{:?}", expr);
+        let expected_expr = AffineExpr::Sub(
+            Box::new(AffineExpr::Add(
+                Box::new(AffineExpr::Var("x".to_string())),
+                Box::new(AffineExpr::Div(
+                    Box::new(AffineExpr::Mul(
+                        2,
+                        Box::new(AffineExpr::Var("y".to_string())),
+                    )),
+                    3,
+                )),
+            )),
+            Box::new(AffineExpr::Mod(
+                Box::new(AffineExpr::Mul(
+                    3,
+                    Box::new(AffineExpr::Var("z".to_string())),
+                )),
+                5,
+            )),
+        );
+
+        assert_eq!(expr, expected_expr);
     }
 }
