@@ -125,7 +125,7 @@ mod tests {
     use super::AffineExpr;
 
     #[test]
-    fn test_affine_expr_deserialize() {
+    fn test_deserialize() {
         // Read the YAML file (assuming it's in the same directory)
         let yaml_str = "1x + 2y - 3z";
         let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
