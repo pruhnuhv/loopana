@@ -99,12 +99,13 @@ impl Transforming for Conditional {
 
 impl Transforming for DataAccess {
     fn apply(&self, transform: &Transform) -> Self {
-        let new_addr = self.addr.apply(transform);
+        let new_addr = self.addr.iter().map(|idx| idx.apply(transform)).collect();
         DataAccess {
             array_name: self.array_name.clone(),
             addr: new_addr,
             reg: self.reg.clone(),
             cond: self.cond.clone(),
+            cond_suffix: self.cond_suffix.clone(),
         }
     }
 }
@@ -123,10 +124,6 @@ impl Transforming for Instruction {
             Instruction::Compute(compute) => {
                 let new_compute = compute.apply(transform);
                 Instruction::Compute(new_compute)
-            }
-            Instruction::Conditional(conditional) => {
-                let new_conditional = conditional.apply(transform);
-                Instruction::Conditional(new_conditional)
             }
         }
     }

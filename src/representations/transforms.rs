@@ -31,9 +31,11 @@ mod tests {
         let expected_transforms = Transforms {
             transforms: vec![
                 Transform::MapSpatial("m".to_string()),
+                Transform::MapSpatial("k".to_string()),
                 Transform::MapTemporal("n".to_string()),
-                Transform::Tiling(("k".to_string(), 2)),
-                Transform::Renaming(("m".to_string(), "m1".to_string())),
+                Transform::Renaming(("m".to_string(), "x".to_string())),
+                Transform::Renaming(("k".to_string(), "SIMD".to_string())),
+                Transform::Renaming(("n".to_string(), "y".to_string())),
             ],
         };
         assert_eq!(transforms, expected_transforms);

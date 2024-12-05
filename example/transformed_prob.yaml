@@ -1,19 +1,7 @@
 iters:
-- iter_name: x
-  bounds:
-  - 0
-  - 100
-  step: 1
-- iter_name: SIMD
-  bounds:
-  - 0
-  - 300
-  step: 1
-- iter_name: y
-  bounds:
-  - 0
-  - 200
-  step: 1
+- for x in (0..100)
+- for SIMD in (0..300)
+- for y in (0..200)
 body:
 - !DataLoad
   array_name: A

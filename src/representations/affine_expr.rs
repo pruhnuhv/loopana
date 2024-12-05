@@ -9,7 +9,6 @@ use nom::{
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
-use std::str::FromStr;
 
 /// Represents an affine expression.
 /// It can be a constant, a variable, or an affine combination of variables.
@@ -29,6 +28,7 @@ pub enum AffineExpr {
 pub enum Coeff {
     Const(i32),
     ConstVar(String),
+    Mul(Box<Coeff>, Box<Coeff>),
 }
 
 impl<'de> Deserialize<'de> for AffineExpr {
@@ -42,6 +42,15 @@ impl<'de> Deserialize<'de> for AffineExpr {
         parse_expr(&s)
             .map(|(_, expr)| expr)
             .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+    }
+}
+
+impl Serialize for AffineExpr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -69,11 +78,37 @@ fn parse_var(input: &str) -> IResult<&str, AffineExpr> {
     map(parse_identifier, |s: &str| AffineExpr::Var(s.to_string()))(input)
 }
 
-// parse coefficient (constant or variable)
+// A coefficient const variable is annoted as an identifier followed by underscore and a normal identifier
+fn parse_const_var(input: &str) -> IResult<&str, Coeff> {
+    map(
+        pair(recognize(pair(alpha1, tag("_"))), parse_identifier),
+        |(s1, s2)| Coeff::ConstVar(format!("{}{}", s1, s2)),
+    )(input)
+}
+
+// parse multiplication expressions for Coeff
 fn parse_coeff(input: &str) -> IResult<&str, Coeff> {
+    let (input, first) = parse_factor_coeff(input)?;
+    let (input, res) = many0(preceded(
+        multispace0,
+        preceded(char('*'), preceded(multispace0, parse_factor_coeff)),
+    ))(input)?;
+    let expr = res
+        .into_iter()
+        .fold(first, |acc, item| Coeff::Mul(Box::new(acc), Box::new(item)));
+    Ok((input, expr))
+}
+
+// parse individual factors for Coeff (constants, variables, or parenthesized expressions)
+fn parse_factor_coeff(input: &str) -> IResult<&str, Coeff> {
     alt((
-        map(parse_identifier, |s: &str| Coeff::ConstVar(s.to_string())),
+        parse_const_var,
         map(parse_integer, Coeff::Const),
+        delimited(
+            preceded(multispace0, char('(')),
+            parse_coeff,
+            preceded(multispace0, char(')')),
+        ),
     ))(input)
 }
 
@@ -137,7 +172,7 @@ fn parse_term(input: &str) -> IResult<&str, AffineExpr> {
 }
 
 // Parse addition and subtraction
-fn parse_expr(input: &str) -> IResult<&str, AffineExpr> {
+pub fn parse_expr(input: &str) -> IResult<&str, AffineExpr> {
     let (input, init) = parse_term(input)?;
     let (input, res) = many0(pair(
         delimited(multispace0, alt((tag("+"), tag("-"))), multispace0),
@@ -159,11 +194,11 @@ impl fmt::Display for AffineExpr {
             AffineExpr::Add(lhs, rhs) => write!(f, "{} + {}", lhs, rhs),
             AffineExpr::Sub(lhs, rhs) => write!(f, "{} - {}", lhs, rhs),
             AffineExpr::Mul(coeff, expr) => match **expr {
-                AffineExpr::Var(_) => write!(f, "{}{}", coeff, expr),
-                _ => write!(f, "{}*({})", coeff, expr),
+                AffineExpr::Var(_) => write!(f, "{} * {}", coeff, expr),
+                _ => write!(f, "{} * ({})", coeff, expr),
             },
-            AffineExpr::Div(expr, divisor) => write!(f, "{}/{}", expr, divisor),
-            AffineExpr::Mod(expr, modulus) => write!(f, "{}%{}", expr, modulus),
+            AffineExpr::Div(expr, divisor) => write!(f, "{} / {}", expr, divisor),
+            AffineExpr::Mod(expr, modulus) => write!(f, "{} % {}", expr, modulus),
         }
     }
 }
@@ -173,16 +208,8 @@ impl fmt::Display for Coeff {
         match self {
             Coeff::Const(c) => write!(f, "{}", c),
             Coeff::ConstVar(name) => write!(f, "{}", name),
+            Coeff::Mul(lhs, rhs) => write!(f, "{} * {}", lhs, rhs),
         }
-    }
-}
-
-impl Serialize for AffineExpr {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
     }
 }
 
@@ -195,14 +222,14 @@ mod tests {
     fn test_serde() {
         // test deserialization
         {
-            let yaml_str = "(1*x + 2*y)/ 3 - 3*z%5\n";
+            let yaml_str = "(1*x + M_a*y)/ 3 - 3*z%5\n";
             let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
             let expected_expr = AffineExpr::Sub(
                 Box::new(AffineExpr::Div(
                     Box::new(AffineExpr::Add(
                         Box::new(AffineExpr::Var("x".to_string())),
                         Box::new(AffineExpr::Mul(
-                            Coeff::Const(2),
+                            Coeff::ConstVar("M_a".to_string()),
                             Box::new(AffineExpr::Var("y".to_string())),
                         )),
                     )),
@@ -240,6 +267,15 @@ mod tests {
                     Coeff::Const(5),
                 )),
             );
+            let serialized = serde_yaml::to_string(&expr).unwrap();
+            let deserialized: AffineExpr = serde_yaml::from_str(&serialized).unwrap();
+            assert_eq!(expr, deserialized);
+        }
+
+        // test another case for ser->deser->ser
+        {
+            let test_str = "(MAX_a * MAX_b) * x + y";
+            let expr: AffineExpr = serde_yaml::from_str(test_str).unwrap();
             let serialized = serde_yaml::to_string(&expr).unwrap();
             let deserialized: AffineExpr = serde_yaml::from_str(&serialized).unwrap();
             assert_eq!(expr, deserialized);

@@ -4,15 +4,9 @@
 #     for n in 0..200
 #       C[m][n] += A[m][k] * B[k][n]
 iters:
-  - iter_name: "m"
-    bounds: [0, 100]
-    step: 1
-  - iter_name: "k"
-    step: 1
-    bounds: [0, 300]
-  - iter_name: "n"
-    bounds: [0, 200]
-    step: 1
+  - for m in (0..100).step(1)
+  - for k in (0..300)
+  - for n in (0..200)
 body:
   - !DataLoad
     array_name: "A"
