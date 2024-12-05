@@ -4,7 +4,7 @@ iters:
 - for y in (0..200)
 body:
 - Ra <= A[x][SIMD]
-- cmp Rcmp Ra
+- cmp Rcmp Ra, $0
 - Rb <= B[SIMD][y] (LE Rcmp)
 - Rc <= C[x][y] (LE Rcmp)
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)

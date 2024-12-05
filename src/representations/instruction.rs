@@ -75,7 +75,7 @@ fn parse_reg_id(input: &str) -> IResult<&str, &str> {
 }
 
 fn parse_immediate(input: &str) -> IResult<&str, &str> {
-    recognize(pair(char('#'), digit1))(input)
+    recognize(pair(char('$'), digit1))(input)
 }
 
 fn parse_src(input: &str) -> IResult<&str, &str> {
@@ -196,7 +196,7 @@ fn parse_compute(input: &str) -> IResult<&str, Instruction> {
     ))(input)?;
 
     // check dst operand cannot be immediat
-    assert!(dst.chars().next().unwrap() != '#');
+    assert!(dst.chars().next().unwrap() != '$');
     if let Some((cond_suffix, cond)) = cond {
         Ok((
             input,
@@ -298,7 +298,7 @@ impl fmt::Display for Operand {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Operand::Reg(reg) => write!(f, "{}", reg),
-            Operand::Imm(imm) => write!(f, "#{}", imm),
+            Operand::Imm(imm) => write!(f, "${}", imm),
         }
     }
 }
@@ -314,9 +314,10 @@ impl fmt::Display for Compute {
             }
         }
         if self.cond.is_some(){
-            write!(f, " ({} {})", self.cond_suffix.as_ref().unwrap(), self.cond.as_ref().unwrap())?;
+            write!(f, " ({} {})", self.cond_suffix.as_ref().unwrap(), self.cond.as_ref().unwrap())
+        } else{
+            Ok(())
         }
-        Ok(())
     }
 }
 
@@ -374,7 +375,7 @@ impl ConditionSuffix {
 
 impl Operand {
     fn from_str(s: &str) -> Operand {
-        if s.chars().next().unwrap() == '#' {
+        if s.chars().next().unwrap() == '$' {
             Operand::Imm(s[1..].parse().unwrap())
         } else {
             Operand::Reg(s.to_string())
@@ -422,7 +423,7 @@ mod tests {
             })
         );
 
-        let instr = "cmp Rcmp Ra, #0";
+        let instr = "cmp Rcmp Ra, $0";
         let (_, instr) = parse_compute(instr).unwrap();
         assert_eq!(
             instr,

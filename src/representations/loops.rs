@@ -142,7 +142,7 @@ iters:
   - for n in (0..200)
 body:
   - Ra <= A[m][k]
-  - cmp Rcmp Ra, #0
+  - cmp Rcmp Ra, $0
   - Rb <= B[k][n] (LE Rcmp)
   - Rc <= C[m][n] (LE Rcmp)
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
@@ -153,6 +153,5 @@ body:
     println!("{}", serialized);
         let deserialized: LoopNest = serde_yaml::from_str(&serialized).unwrap();
         assert_eq!(loop_prob, deserialized);
-        assert!(false);
     }
 }

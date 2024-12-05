@@ -9,8 +9,9 @@ iters:
   - for n in (0..200)
 body:
   - Ra <= A[m][k]
-  - cmp Rcmp Ra, \#0
+  - cmp Rcmp Ra, $0
   - Rb <= B[k][n] (LE Rcmp)
   - Rc <= C[m][n] (LE Rcmp)
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
   - Rc1 => C[m][n] (LE Rcmp)
+properties: null
