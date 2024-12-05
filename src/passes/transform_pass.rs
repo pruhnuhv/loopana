@@ -17,39 +17,8 @@ pub trait Transforming {
 
 impl Transforming for AffineExpr {
     fn apply(&self, transform: &Transform) -> Self {
-        // TODO existing may be wrong, need to come back after updating affine expression
-        match (self, transform) {
-            (AffineExpr::Var(name), Transform::Renaming((old_name, new_name))) => {
-                if name == old_name {
-                    AffineExpr::Var(new_name.clone())
-                } else {
-                    AffineExpr::Var(name.clone())
-                }
-            }
-            (AffineExpr::Add(lhs, rhs), _) => {
-                let new_lhs = lhs.apply(transform);
-                let new_rhs = rhs.apply(transform);
-                AffineExpr::Add(Box::new(new_lhs), Box::new(new_rhs))
-            }
-            (AffineExpr::Sub(lhs, rhs), _) => {
-                let new_lhs = lhs.apply(transform);
-                let new_rhs = rhs.apply(transform);
-                AffineExpr::Sub(Box::new(new_lhs), Box::new(new_rhs))
-            }
-            (AffineExpr::Mul(coeff, expr), _) => {
-                let new_expr = expr.apply(transform);
-                AffineExpr::Mul(*coeff, Box::new(new_expr))
-            }
-            (AffineExpr::Div(expr, divisor), _) => {
-                let new_expr = expr.apply(transform);
-                AffineExpr::Div(Box::new(new_expr), *divisor)
-            }
-            (AffineExpr::Mod(expr, modulus), _) => {
-                let new_expr = expr.apply(transform);
-                AffineExpr::Mod(Box::new(new_expr), *modulus)
-            }
-            _ => self.clone()
-        }
+        // TODO
+        self.clone()
     }
 }
 

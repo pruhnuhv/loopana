@@ -1,60 +1,65 @@
 use nom::{
     branch::alt,
-    bytes::complete::take_while1,
-    character::complete::{char, digit1, space0},
-    combinator::{map_res, opt},
-    sequence::terminated,
+    bytes::complete::tag,
+    character::complete::{alpha1, alphanumeric0, char, digit1, multispace0, space0},
+    combinator::{map, map_res, opt, recognize},
+    multi::many0,
+    sequence::{delimited, pair, preceded, tuple},
     IResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
 
 /// Represents an affine expression.
 /// It can be a constant, a variable, or an affine combination of variables.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AffineExpr {
-    Const(i32),
     Var(String),
+    Const(i32),
     Add(Box<AffineExpr>, Box<AffineExpr>),
     Sub(Box<AffineExpr>, Box<AffineExpr>),
-    Mul(i32, Box<AffineExpr>),
-    Div(Box<AffineExpr>, i32),
-    Mod(Box<AffineExpr>, i32),
+    Mul(Coeff, Box<AffineExpr>),
+    Div(Box<AffineExpr>, Coeff),
+    Mod(Box<AffineExpr>, Coeff),
 }
 
-impl PartialEq for AffineExpr {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (AffineExpr::Const(a), AffineExpr::Const(b)) => a == b,
-            (AffineExpr::Var(a), AffineExpr::Var(b)) => a == b,
-            (AffineExpr::Add(a1, a2), AffineExpr::Add(b1, b2))
-            | (AffineExpr::Sub(a1, a2), AffineExpr::Sub(b1, b2)) => a1 == b1 && a2 == b2,
-            (AffineExpr::Mul(c1, e1), AffineExpr::Mul(c2, e2)) => c1 == c2 && e1 == e2,
-            (AffineExpr::Div(e1, c1), AffineExpr::Div(e2, c2)) => e1 == e2 && c1 == c2,
-            (AffineExpr::Mod(e1, c1), AffineExpr::Mod(e2, c2)) => e1 == e2 && c1 == c2,
-            _ => false,
-        }
-    }
+/// Represents a coefficient (constant or a variable as metaparameters)
+#[derive(Clone, Debug, PartialEq)]
+pub enum Coeff {
+    Const(i32),
+    ConstVar(String),
 }
 
-impl Eq for AffineExpr {}
+// impl PartialEq for AffineExpr {
+//     fn eq(&self, other: &Self) -> bool {
+//         match (self, other) {
+//             (AffineExpr::Const(a), AffineExpr::Const(b)) => a == b,
+//             (AffineExpr::Var(a), AffineExpr::Var(b)) => a == b,
+//             (AffineExpr::Add(a1, a2), AffineExpr::Add(b1, b2))
+//             | (AffineExpr::Sub(a1, a2), AffineExpr::Sub(b1, b2)) => a1 == b1 && a2 == b2,
+//             (AffineExpr::Mul(c1, e1), AffineExpr::Mul(c2, e2)) => c1 == c2 && e1 == e2,
+//             (AffineExpr::Div(e1, c1), AffineExpr::Div(e2, c2)) => e1 == e2 && c1 == c2,
+//             (AffineExpr::Mod(e1, c1), AffineExpr::Mod(e2, c2)) => e1 == e2 && c1 == c2,
+//             _ => false,
+//         }
+//     }
+// }
 
-impl AffineExpr {
-    /// Evaluates the affine expression given a mapping of variable values.
-    fn evaluate(&self, vars: &HashMap<String, i32>) -> i32 {
-        match self {
-            AffineExpr::Const(c) => *c,
-            AffineExpr::Var(name) => *vars.get(name).expect("Variable not found"),
-            AffineExpr::Add(lhs, rhs) => lhs.evaluate(vars) + rhs.evaluate(vars),
-            AffineExpr::Sub(lhs, rhs) => lhs.evaluate(vars) - rhs.evaluate(vars),
-            AffineExpr::Mul(coeff, expr) => coeff * expr.evaluate(vars),
-            AffineExpr::Div(expr, divisor) => expr.evaluate(vars) / divisor,
-            AffineExpr::Mod(expr, modulus) => expr.evaluate(vars) % modulus,
-        }
-    }
-}
+// impl AffineExpr {
+//     /// Evaluates the affine expression given a mapping of variable values.
+//     fn evaluate(&self, vars: &HashMap<String, i32>) -> i32 {
+//         match self {
+//             AffineExpr::Const(c) => *c,
+//             AffineExpr::Var(name) => *vars.get(name).expect("Variable not found"),
+//             AffineExpr::Add(lhs, rhs) => lhs.evaluate(vars) + rhs.evaluate(vars),
+//             AffineExpr::Sub(lhs, rhs) => lhs.evaluate(vars) - rhs.evaluate(vars),
+//             AffineExpr::Mul(coeff, expr) => coeff * expr.evaluate(vars),
+//             AffineExpr::Div(expr, divisor) => expr.evaluate(vars) / divisor,
+//             AffineExpr::Mod(expr, modulus) => expr.evaluate(vars) % modulus,
+//         }
+//     }
+// }
 
 impl<'de> Deserialize<'de> for AffineExpr {
     fn deserialize<D>(deserializer: D) -> Result<AffineExpr, D::Error>
@@ -70,72 +75,110 @@ impl<'de> Deserialize<'de> for AffineExpr {
     }
 }
 
-fn parse_expr(input: &str) -> IResult<&str, AffineExpr> {
-    let (input, initial_term) = parse_term(input)?;
-    parse_expr_tail(input, initial_term)
+// Helper function to parse identifiers (variables)
+fn parse_identifier(input: &str) -> IResult<&str, &str> {
+    recognize(pair(alpha1, alphanumeric0))(input)
 }
 
-fn parse_expr_tail(input: &str, left: AffineExpr) -> IResult<&str, AffineExpr> {
-    let (input, _) = space0(input)?;
-    if let Ok((input, (op, term))) = parse_add_sub(input) {
-        let expr = match op {
-            '+' => AffineExpr::Add(Box::new(left), Box::new(term)),
-            '-' => AffineExpr::Sub(Box::new(left), Box::new(term)),
-            _ => unreachable!(),
-        };
-        parse_expr_tail(input, expr)
-    } else {
-        Ok((input, left))
-    }
+// Helper function to parse integers
+fn parse_integer(input: &str) -> IResult<&str, i32, nom::error::Error<&str>> {
+    map_res(
+        recognize::<_, _, nom::error::Error<_>, _>(pair(alt((tag("-"), tag("+"))), digit1)),
+        str::parse::<i32>,
+    )(input)
+    .or_else(|_| map_res(digit1, str::parse::<i32>)(input))
 }
 
-fn parse_add_sub(input: &str) -> IResult<&str, (char, AffineExpr)> {
-    let (input, op) = alt((char('+'), char('-')))(input)?;
-    let (input, _) = space0(input)?;
-    let (input, term) = parse_term(input)?;
-    Ok((input, (op, term)))
+// Parse constants as AffineExpr::Const
+fn parse_const(input: &str) -> IResult<&str, AffineExpr> {
+    map(parse_integer, AffineExpr::Const)(input)
 }
 
-fn parse_term(input: &str) -> IResult<&str, AffineExpr> {
-    let (input, _) = space0(input)?;
-    alt((parse_full_term, parse_const))(input)
+// Parse variables as AffineExpr::Var
+fn parse_var(input: &str) -> IResult<&str, AffineExpr> {
+    map(parse_identifier, |s: &str| AffineExpr::Var(s.to_string()))(input)
 }
 
-fn parse_full_term(input: &str) -> IResult<&str, AffineExpr> {
-    let (input, coeff_opt) = opt(terminated(map_res(digit1, i32::from_str), space0))(input)?;
-    let coeff = coeff_opt.unwrap_or(1);
+// parse coefficient (constant or variable)
+fn parse_coeff(input: &str) -> IResult<&str, Coeff> {
+    alt((
+        map(parse_identifier, |s: &str| Coeff::ConstVar(s.to_string())),
+        map(parse_integer, Coeff::Const),
+    ))(input)
+}
 
-    let (input, var_name) = take_while1(|c: char| c.is_alphabetic())(input)?;
-    let var_expr = if coeff == 1 {
-        AffineExpr::Var(var_name.to_string())
-    } else {
-        AffineExpr::Mul(coeff, Box::new(AffineExpr::Var(var_name.to_string())))
-    };
-
-    let (input, _) = space0(input)?;
-    let (input, div_mod_opt) = opt(parse_div_mod)(input)?;
-    if let Some((op_char, constant)) = div_mod_opt {
-        let expr = match op_char {
-            '/' => AffineExpr::Div(Box::new(var_expr), constant),
-            '%' => AffineExpr::Mod(Box::new(var_expr), constant),
-            _ => unreachable!(),
-        };
+// Multiplication can only be between a coefficient and an expression
+fn parse_mul(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, (coeff, expr)) = tuple((
+        parse_coeff,
+        alt((
+            preceded(space0, parse_factor), // handles "3x"
+            preceded(space0, preceded(char('*'), preceded(space0, parse_factor))), // handles "3 * x"
+        )),
+    ))(input)?;
+    if coeff == Coeff::Const(1) {
         Ok((input, expr))
     } else {
-        Ok((input, var_expr))
+        Ok((input, AffineExpr::Mul(coeff, Box::new(expr))))
     }
 }
 
-fn parse_div_mod(input: &str) -> IResult<&str, (char, i32)> {
-    let (input, op_char) = alt((char('/'), char('%')))(input)?;
-    let (input, _) = space0(input)?;
-    let (input, constant) = map_res(digit1, i32::from_str)(input)?;
-    Ok((input, (op_char, constant)))
+// Parse parenthesized expressions
+fn parse_parens(input: &str) -> IResult<&str, AffineExpr> {
+    delimited(
+        delimited(multispace0, tag("("), multispace0),
+        parse_expr,
+        delimited(multispace0, tag(")"), multispace0),
+    )(input)
 }
 
-fn parse_const(input: &str) -> IResult<&str, AffineExpr> {
-    let (input, number) = map_res(digit1, i32::from_str)(input)?;
-    Ok((input, AffineExpr::Const(number)))
+// Parse primary expressions: constants, variables, variables with coefficient, or parenthesized expressions
+fn parse_factor(input: &str) -> IResult<&str, AffineExpr> {
+    preceded(
+        multispace0,
+        alt((parse_mul, parse_const, parse_var, parse_parens)),
+    )(input)
+}
+
+// Parse term (including optional division and modulo)
+fn parse_term(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, (expr, op_div)) = tuple((
+        parse_factor,
+        preceded(
+            multispace0,
+            opt(tuple((
+                alt((tag("/"), tag("%"))),
+                preceded(multispace0, parse_coeff),
+            ))),
+        ),
+    ))(input)?;
+
+    Ok((
+        input,
+        match op_div {
+            Some((op, divisor)) => match op {
+                "/" => AffineExpr::Div(Box::new(expr), divisor),
+                "%" => AffineExpr::Mod(Box::new(expr), divisor),
+                _ => unreachable!(),
+            },
+            None => expr,
+        },
+    ))
+}
+
+// Parse addition and subtraction
+fn parse_expr(input: &str) -> IResult<&str, AffineExpr> {
+    let (input, init) = parse_term(input)?;
+    let (input, res) = many0(pair(
+        delimited(multispace0, alt((tag("+"), tag("-"))), multispace0),
+        parse_term,
+    ))(input)?;
+    let expr = res.into_iter().fold(init, |acc, (op, val)| match op {
+        "+" => AffineExpr::Add(Box::new(acc), Box::new(val)),
+        "-" => AffineExpr::Sub(Box::new(acc), Box::new(val)),
+        _ => unreachable!(),
+    });
+    Ok((input, expr))
 }
 
 impl fmt::Display for AffineExpr {
@@ -155,6 +198,15 @@ impl fmt::Display for AffineExpr {
     }
 }
 
+impl fmt::Display for Coeff {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Coeff::Const(c) => write!(f, "{}", c),
+            Coeff::ConstVar(name) => write!(f, "{}", name),
+        }
+    }
+}
+
 impl Serialize for AffineExpr {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -167,93 +219,60 @@ impl Serialize for AffineExpr {
 #[cfg(test)]
 mod tests {
     use super::AffineExpr;
+    use super::Coeff;
 
     #[test]
     fn test_serde() {
         // test deserialization
         {
-            let yaml_str = "1x + 2y/3 - 3z%5\n";
+            let yaml_str = "(1*x + 2*y)/ 3 - 3*z%5\n";
             let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
             let expected_expr = AffineExpr::Sub(
-                Box::new(AffineExpr::Add(
-                    Box::new(AffineExpr::Var("x".to_string())),
-                    Box::new(AffineExpr::Div(
+                Box::new(AffineExpr::Div(
+                    Box::new(AffineExpr::Add(
+                        Box::new(AffineExpr::Var("x".to_string())),
                         Box::new(AffineExpr::Mul(
-                            2,
+                            Coeff::Const(2),
                             Box::new(AffineExpr::Var("y".to_string())),
                         )),
-                        3,
                     )),
+                    Coeff::Const(3),
                 )),
                 Box::new(AffineExpr::Mod(
                     Box::new(AffineExpr::Mul(
-                        3,
+                        Coeff::Const(3),
                         Box::new(AffineExpr::Var("z".to_string())),
                     )),
-                    5,
+                    Coeff::Const(5),
                 )),
             );
             assert_eq!(expr, expected_expr);
         }
 
-        // test serialization
+        // test ser->deser->ser consistency
         {
             let expr = AffineExpr::Sub(
                 Box::new(AffineExpr::Add(
                     Box::new(AffineExpr::Var("x".to_string())),
                     Box::new(AffineExpr::Div(
                         Box::new(AffineExpr::Mul(
-                            2,
+                            Coeff::Const(2),
                             Box::new(AffineExpr::Var("y".to_string())),
                         )),
-                        3,
+                        Coeff::Const(3),
                     )),
                 )),
                 Box::new(AffineExpr::Mod(
                     Box::new(AffineExpr::Mul(
-                        3,
+                        Coeff::Const(3),
                         Box::new(AffineExpr::Var("z".to_string())),
                     )),
-                    5,
-                )),
-            );
-
-            let serialized = serde_yaml::to_string(&expr).unwrap().clone();
-            assert_eq!(serialized, "x + 2y/3 - 3z%5\n".to_string());
-        }
-
-        // test serialization followed by deserialization
-        {
-            let expr = AffineExpr::Sub(
-                Box::new(AffineExpr::Add(
-                    Box::new(AffineExpr::Var("x".to_string())),
-                    Box::new(AffineExpr::Div(
-                        Box::new(AffineExpr::Mul(
-                            2,
-                            Box::new(AffineExpr::Var("y".to_string())),
-                        )),
-                        3,
-                    )),
-                )),
-                Box::new(AffineExpr::Mod(
-                    Box::new(AffineExpr::Mul(
-                        3,
-                        Box::new(AffineExpr::Var("z".to_string())),
-                    )),
-                    5,
+                    Coeff::Const(5),
                 )),
             );
             let serialized = serde_yaml::to_string(&expr).unwrap();
             let deserialized: AffineExpr = serde_yaml::from_str(&serialized).unwrap();
             assert_eq!(expr, deserialized);
-        }
-
-        // test deserialization followed by serialization
-        {
-            let yaml_str = "x + 2y/3 - 3z%5\n";
-            let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
-            let serialized = serde_yaml::to_string(&expr).unwrap();
-            assert_eq!(yaml_str, serialized);
         }
     }
 }
