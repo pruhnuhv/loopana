@@ -31,36 +31,6 @@ pub enum Coeff {
     ConstVar(String),
 }
 
-// impl PartialEq for AffineExpr {
-//     fn eq(&self, other: &Self) -> bool {
-//         match (self, other) {
-//             (AffineExpr::Const(a), AffineExpr::Const(b)) => a == b,
-//             (AffineExpr::Var(a), AffineExpr::Var(b)) => a == b,
-//             (AffineExpr::Add(a1, a2), AffineExpr::Add(b1, b2))
-//             | (AffineExpr::Sub(a1, a2), AffineExpr::Sub(b1, b2)) => a1 == b1 && a2 == b2,
-//             (AffineExpr::Mul(c1, e1), AffineExpr::Mul(c2, e2)) => c1 == c2 && e1 == e2,
-//             (AffineExpr::Div(e1, c1), AffineExpr::Div(e2, c2)) => e1 == e2 && c1 == c2,
-//             (AffineExpr::Mod(e1, c1), AffineExpr::Mod(e2, c2)) => e1 == e2 && c1 == c2,
-//             _ => false,
-//         }
-//     }
-// }
-
-// impl AffineExpr {
-//     /// Evaluates the affine expression given a mapping of variable values.
-//     fn evaluate(&self, vars: &HashMap<String, i32>) -> i32 {
-//         match self {
-//             AffineExpr::Const(c) => *c,
-//             AffineExpr::Var(name) => *vars.get(name).expect("Variable not found"),
-//             AffineExpr::Add(lhs, rhs) => lhs.evaluate(vars) + rhs.evaluate(vars),
-//             AffineExpr::Sub(lhs, rhs) => lhs.evaluate(vars) - rhs.evaluate(vars),
-//             AffineExpr::Mul(coeff, expr) => coeff * expr.evaluate(vars),
-//             AffineExpr::Div(expr, divisor) => expr.evaluate(vars) / divisor,
-//             AffineExpr::Mod(expr, modulus) => expr.evaluate(vars) % modulus,
-//         }
-//     }
-// }
-
 impl<'de> Deserialize<'de> for AffineExpr {
     fn deserialize<D>(deserializer: D) -> Result<AffineExpr, D::Error>
     where

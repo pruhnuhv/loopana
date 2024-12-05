@@ -1,4 +1,5 @@
 use crate::representations::affine_expr::AffineExpr;
+use crate::representations::affine_expr::Coeff;
 use crate::representations::instruction::*;
 use crate::representations::loops::*;
 use crate::representations::mapping::MappingType;
@@ -15,10 +16,67 @@ pub trait Transforming {
     }
 }
 
+impl Transforming for Coeff {
+    fn apply(&self, transform: &Transform) -> Self {
+        match (self, transform) {
+            (Coeff::ConstVar(var), Transform::Renaming((old_iter, new_iter))) => {
+                if var == old_iter {
+                    Coeff::ConstVar(new_iter.clone())
+                } else {
+                    self.clone()
+                }
+            }
+            (Coeff::ConstVar(_), Transform::Tiling(_)) => {
+                // TODO
+                self.clone()
+            }
+            _ => self.clone(),
+        }
+    }
+}
+
 impl Transforming for AffineExpr {
     fn apply(&self, transform: &Transform) -> Self {
-        // TODO
-        self.clone()
+        match (self, transform) {
+            (AffineExpr::Var(var_name), Transform::Renaming((old_iter, new_iter))) => {
+                if var_name == old_iter {
+                    AffineExpr::Var(new_iter.clone())
+                } else {
+                    self.clone()
+                }
+            }
+            (AffineExpr::Var(_), Transform::Tiling(_)) => {
+                // TODO
+                self.clone()
+            }
+            (AffineExpr::Var(_), _) => self.clone(),
+            (AffineExpr::Const(_), _) => self.clone(),
+            (AffineExpr::Add(lhs, rhs), _) => {
+                let new_lhs = lhs.apply(transform);
+                let new_rhs = rhs.apply(transform);
+                AffineExpr::Add(Box::new(new_lhs), Box::new(new_rhs))
+            }
+            (AffineExpr::Sub(lhs, rhs), _) => {
+                let new_lhs = lhs.apply(transform);
+                let new_rhs = rhs.apply(transform);
+                AffineExpr::Sub(Box::new(new_lhs), Box::new(new_rhs))
+            }
+            (AffineExpr::Mul(coeff, expr), _) => {
+                let new_coeff = coeff.apply(transform);
+                let new_expr = expr.apply(transform);
+                AffineExpr::Mul(new_coeff, Box::new(new_expr))
+            }
+            (AffineExpr::Div(expr, divisor), _) => {
+                let new_expr = expr.apply(transform);
+                let new_divisor = divisor.apply(transform);
+                AffineExpr::Div(Box::new(new_expr), new_divisor)
+            }
+            (AffineExpr::Mod(expr, modulus), _) => {
+                let new_expr = expr.apply(transform);
+                let new_modulus = modulus.apply(transform);
+                AffineExpr::Mod(Box::new(new_expr), new_modulus)
+            }
+        }
     }
 }
 
