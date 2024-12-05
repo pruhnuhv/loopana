@@ -3,7 +3,7 @@
 #   for k in 0..300
 #     for n in 0..200
 #       C[m][n] += A[m][k] * B[k][n]
-loops:
+iters:
   - iter_name: "m"
     bounds: [0, 100]
     step: 1

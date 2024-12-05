@@ -1,17 +1,26 @@
+use super::mapping::MappingType;
+use std::collections::HashMap;
+
 use super::instruction::Instruction;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct LoopNest {
-    pub loops: Vec<Loop>,
+    pub iters: Vec<LoopIter>,
     pub body: Vec<Instruction>,
+    pub properties: Option<LoopProperties>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct Loop {
+pub struct LoopIter {
     pub iter_name: String,
     pub bounds: (i32, i32),
     pub step: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
+pub struct LoopProperties {
+    pub mapping: HashMap<String, MappingType>,
 }
 
 #[cfg(test)]
@@ -35,8 +44,7 @@ mod tests {
 
     #[test]
     fn test_serde() {
-        let loop_prob_str = 
-r#"loops:
+        let loop_prob_str = r#"iters:
   - iter_name: "m"
     bounds: [0, 100]
     step: 1
