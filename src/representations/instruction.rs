@@ -12,7 +12,6 @@ pub enum Instruction {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct DataAccess {
     pub array_name: String,
-    pub duration: Option<i32>,
     pub addr: AffineExpr,
     /// target or source register, depending load or store
     pub reg: String,
@@ -25,7 +24,6 @@ pub struct Compute {
     pub op: String,
     pub src: Vec<String>,
     pub dst: String,
-    pub duration: Option<i32>,
     /// optional condition to execute the instruction, String is the condition register
     pub cond: Option<String>,
 }

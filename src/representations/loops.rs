@@ -4,21 +4,21 @@ use std::collections::HashMap;
 use super::instruction::Instruction;
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LoopNest {
     pub iters: Vec<LoopIter>,
     pub body: Vec<Instruction>,
     pub properties: Option<LoopProperties>,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LoopIter {
     pub iter_name: String,
     pub bounds: (i32, i32),
     pub step: i32,
 }
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LoopProperties {
     pub mapping: HashMap<String, MappingType>,
 }

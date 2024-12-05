@@ -1,11 +1,16 @@
 transforms:
     - !MapSpatial
         "m"
+    - !MapSpatial
+        "k"
     - !MapTemporal
         "n"
-    - !Tiling
-        - "k"
-        - 2
     - !Renaming
         - "m"
-        - "m1"
+        - "x"
+    - !Renaming
+        - "k"
+        - "SIMD"
+    - !Renaming
+        - "n"
+        - "y"

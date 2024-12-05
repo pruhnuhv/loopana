@@ -1,0 +1,54 @@
+iters:
+- iter_name: x
+  bounds:
+  - 0
+  - 100
+  step: 1
+- iter_name: SIMD
+  bounds:
+  - 0
+  - 300
+  step: 1
+- iter_name: y
+  bounds:
+  - 0
+  - 200
+  step: 1
+body:
+- !DataLoad
+  array_name: A
+  addr: SIMD + 300x
+  reg: Ra
+  cond: null
+- !Conditional
+  cond_compute:
+    op: cmp
+    src:
+    - Ra
+    dst: Rcmp
+    cond: null
+  prob: 0.5
+- !DataLoad
+  array_name: B
+  addr: y + 200SIMD
+  reg: Rb
+  cond: Rcmp
+- !DataLoad
+  array_name: C
+  addr: y + 200x
+  reg: Rc
+  cond: Rcmp
+- !Compute
+  op: mac
+  src:
+  - Ra
+  - Rb
+  - Rc
+  dst: Rc
+  cond: Rcmp
+- !DataStore
+  array_name: store_C
+  addr: y + 200x
+  reg: Rc
+  cond: Rcmp
+properties: null
