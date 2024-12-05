@@ -1,0 +1,11 @@
+transforms:
+    - !MapSpatial
+        "m"
+    - !MapTemporal
+        "n"
+    - !Tiling
+        - "k"
+        - 2
+    - !Renaming
+        - "m"
+        - "m1"

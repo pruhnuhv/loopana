@@ -9,6 +9,7 @@ pub struct Mapping {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum MappingType {
     Spatial,
+    Temporal,
     InterTile,
     IntraTile,
 }
