@@ -17,24 +17,33 @@ body:
   - !DataLoad
     array_name: "A"
     addr: "k + 300m"
+    reg: "#Ra"
   - !DataLoad
     array_name: "B"
     addr: "n + 200k"
+    reg: "#Rb"
   - !DataLoad
     array_name: "C"
     addr: "n + 200m"
+    reg: "#Rc"
   - !Compute
     op: "mac"
+    src: ["#Ra", "#Rb", "#Rc"]
+    dst: "#Rc"
   - !DataStore
     array_name: "store_C"
     addr: "n + 200m"
+    reg: "#Rc"
 
 conditionals:
-  - cond_comp_loops:
+  - cond_comp:
       - !DataLoad
         array_name: "load_A"
         addr: "k + 300m"
+        reg: "#Ra"
       - !Compute
         op: "cmp"
+        src: ["#Ra"]
+        dst: "#Rcmp"
     skipped_loops: ["n"]
     prob: 0.5

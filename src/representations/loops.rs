@@ -1,5 +1,5 @@
-use super::affine_expr::AffineExpr;
 use serde_derive::Deserialize;
+use super::instruction::Instruction;
 
 #[derive(Debug, Deserialize)]
 pub struct LoopNest {
@@ -15,30 +15,11 @@ pub struct Loop {
     pub step: i32,
 }
 
-#[derive(Debug, Deserialize)]
-pub enum Instruction {
-    DataLoad(DataAccess),
-    DataStore(DataAccess),
-    Compute(Compute),
-}
-
-#[derive(Debug, Deserialize)]
-pub struct DataAccess {
-    pub array_name: String,
-    pub duration: Option<i32>,
-    pub addr: AffineExpr,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Compute {
-    pub op: String,
-    pub duration: Option<i32>,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct Conditionals {
     /// the loops that are executed conditionally
-    pub cond_comp_loops: Vec<Instruction>,
+    pub cond_comp: Vec<Instruction>,
     pub skipped_loops: Vec<String>,
     pub prob: f64,
 }

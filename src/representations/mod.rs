@@ -3,3 +3,4 @@ pub mod affine_expr;
 pub mod arch;
 pub mod loops;
 pub mod mapping;
+pub mod instruction;
