@@ -19,7 +19,7 @@ body:
     addr: "k + 300m"
     reg: "Ra"
   - !Conditional
-    compute:
+    cond_compute:
       !Compute
         op: "cmp"
         src: ["Ra"]

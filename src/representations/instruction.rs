@@ -32,6 +32,6 @@ pub struct Compute {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Conditional {
-    pub compute: Compute,
+    pub cond_compute: Compute,
     pub prob: f64,
 }
