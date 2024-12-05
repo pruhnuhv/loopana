@@ -114,6 +114,8 @@ pub struct LoopProperties {
     pub mapping: HashMap<String, MappingType>,
 }
 
+
+// TODO move this to integration tests
 #[cfg(test)]
 mod tests {
     use serde_yaml;
@@ -133,48 +135,24 @@ mod tests {
 
     #[test]
     fn test_serde() {
-        let loop_prob_str = r#"iters:
-  - for m in (0..100)
+        let loop_prob_str = r#"
+iters:
+  - for m in (0..100).step(1)
   - for k in (0..300)
   - for n in (0..200)
 body:
-  - !DataLoad
-    array_name: "A"
-    addr: "k + 300m"
-    reg: "Ra"
-  - !DataLoad
-    array_name: "B"
-    addr: "n + 200k"
-    reg: "Rb"
-  - !DataLoad
-    array_name: "C"
-    addr: "n + 200m"
-    reg: "Rc"
-  - !Compute
-    op: "mac"
-    src: ["Ra", "Rb", "Rc"]
-    dst: "Rc"
-  - !DataStore
-    array_name: "store_C"
-    addr: "n + 200m"
-    reg: "Rc"
-
-conditionals:
-  - cond_comp:
-      - !DataLoad
-        array_name: "load_A"
-        addr: "k + 300m"
-        reg: "Ra"
-      - !Compute
-        op: "cmp"
-        src: ["Ra"]
-        dst: "Rcmp"
-    skipped_loops: ["n"]
-    prob: 0.5
+  - Ra <= A[m][k]
+  - cmp Rcmp Ra, #0
+  - Rb <= B[k][n] (LE Rcmp)
+  - Rc <= C[m][n] (LE Rcmp)
+  - mac Rc1 Ra, Rb, Rc (LE Rcmp)
+  - Rc1 => C[m][n] (LE Rcmp)
     "#;
         let loop_prob: LoopNest = serde_yaml::from_str(loop_prob_str).unwrap();
         let serialized = serde_yaml::to_string(&loop_prob).unwrap().clone();
+    println!("{}", serialized);
         let deserialized: LoopNest = serde_yaml::from_str(&serialized).unwrap();
         assert_eq!(loop_prob, deserialized);
+        assert!(false);
     }
 }

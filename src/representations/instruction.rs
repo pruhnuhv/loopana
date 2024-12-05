@@ -270,7 +270,11 @@ impl fmt::Display for Instruction {
                 for idx in &data_access.addr {
                     write!(f, "[{}]", idx)?;
                 }
-                write!(f, "")
+                if data_access.cond.is_some(){
+                    write!(f, " ({} {})", data_access.cond_suffix.as_ref().unwrap(), data_access.cond.as_ref().unwrap())
+                }else{
+                    Ok(())
+                }
             }
 
             Instruction::DataStore(data_access) => {
@@ -279,7 +283,11 @@ impl fmt::Display for Instruction {
                 for idx in &data_access.addr {
                     write!(f, "[{}]", idx)?;
                 }
-                Ok(())
+                if data_access.cond.is_some(){
+                    write!(f, " ({} {})", data_access.cond_suffix.as_ref().unwrap(), data_access.cond.as_ref().unwrap())
+                }else{
+                    Ok(())
+                }
             }
             Instruction::Compute(compute) => write!(f, "{}", compute),
         }
@@ -305,7 +313,23 @@ impl fmt::Display for Compute {
                 write!(f, ", {}", src)?;
             }
         }
+        if self.cond.is_some(){
+            write!(f, " ({} {})", self.cond_suffix.as_ref().unwrap(), self.cond.as_ref().unwrap())?;
+        }
         Ok(())
+    }
+}
+
+impl fmt::Display for ConditionSuffix{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConditionSuffix::EQ => write!(f, "EQ"),
+            ConditionSuffix::NE => write!(f, "NE"),
+            ConditionSuffix::LT => write!(f, "LT"),
+            ConditionSuffix::LE => write!(f, "LE"),
+            ConditionSuffix::GT => write!(f, "GT"),
+            ConditionSuffix::GE => write!(f, "GE"),
+        }
     }
 }
 
