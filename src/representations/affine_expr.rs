@@ -6,8 +6,9 @@ use nom::{
     sequence::terminated,
     IResult,
 };
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use std::fmt;
 use std::str::FromStr;
 
 /// Represents an affine expression.
@@ -137,35 +138,122 @@ fn parse_const(input: &str) -> IResult<&str, AffineExpr> {
     Ok((input, AffineExpr::Const(number)))
 }
 
+impl fmt::Display for AffineExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AffineExpr::Const(c) => write!(f, "{}", c),
+            AffineExpr::Var(name) => write!(f, "{}", name),
+            AffineExpr::Add(lhs, rhs) => write!(f, "{} + {}", lhs, rhs),
+            AffineExpr::Sub(lhs, rhs) => write!(f, "{} - {}", lhs, rhs),
+            AffineExpr::Mul(coeff, expr) => match **expr {
+                AffineExpr::Var(_) => write!(f, "{}{}", coeff, expr),
+                _ => write!(f, "{}*({})", coeff, expr),
+            },
+            AffineExpr::Div(expr, divisor) => write!(f, "{}/{}", expr, divisor),
+            AffineExpr::Mod(expr, modulus) => write!(f, "{}%{}", expr, modulus),
+        }
+    }
+}
+
+impl Serialize for AffineExpr {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::AffineExpr;
 
     #[test]
-    fn test_deserialize() {
-        // Read the YAML file (assuming it's in the same directory)
-        let yaml_str = "1x + 2y/3 - 3z%5";
-        let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
-        let expected_expr = AffineExpr::Sub(
-            Box::new(AffineExpr::Add(
-                Box::new(AffineExpr::Var("x".to_string())),
-                Box::new(AffineExpr::Div(
-                    Box::new(AffineExpr::Mul(
-                        2,
-                        Box::new(AffineExpr::Var("y".to_string())),
+    fn test_serde() {
+        // test deserialization
+        {
+            let yaml_str = "1x + 2y/3 - 3z%5\n";
+            let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
+            let expected_expr = AffineExpr::Sub(
+                Box::new(AffineExpr::Add(
+                    Box::new(AffineExpr::Var("x".to_string())),
+                    Box::new(AffineExpr::Div(
+                        Box::new(AffineExpr::Mul(
+                            2,
+                            Box::new(AffineExpr::Var("y".to_string())),
+                        )),
+                        3,
                     )),
-                    3,
                 )),
-            )),
-            Box::new(AffineExpr::Mod(
-                Box::new(AffineExpr::Mul(
-                    3,
-                    Box::new(AffineExpr::Var("z".to_string())),
+                Box::new(AffineExpr::Mod(
+                    Box::new(AffineExpr::Mul(
+                        3,
+                        Box::new(AffineExpr::Var("z".to_string())),
+                    )),
+                    5,
                 )),
-                5,
-            )),
-        );
+            );
+            assert_eq!(expr, expected_expr);
+        }
 
-        assert_eq!(expr, expected_expr);
+        // test serialization
+        {
+            let expr = AffineExpr::Sub(
+                Box::new(AffineExpr::Add(
+                    Box::new(AffineExpr::Var("x".to_string())),
+                    Box::new(AffineExpr::Div(
+                        Box::new(AffineExpr::Mul(
+                            2,
+                            Box::new(AffineExpr::Var("y".to_string())),
+                        )),
+                        3,
+                    )),
+                )),
+                Box::new(AffineExpr::Mod(
+                    Box::new(AffineExpr::Mul(
+                        3,
+                        Box::new(AffineExpr::Var("z".to_string())),
+                    )),
+                    5,
+                )),
+            );
+
+            let serialized = serde_yaml::to_string(&expr).unwrap().clone();
+            assert_eq!(serialized, "x + 2y/3 - 3z%5\n".to_string());
+        }
+
+        // test serialization followed by deserialization
+        {
+            let expr = AffineExpr::Sub(
+                Box::new(AffineExpr::Add(
+                    Box::new(AffineExpr::Var("x".to_string())),
+                    Box::new(AffineExpr::Div(
+                        Box::new(AffineExpr::Mul(
+                            2,
+                            Box::new(AffineExpr::Var("y".to_string())),
+                        )),
+                        3,
+                    )),
+                )),
+                Box::new(AffineExpr::Mod(
+                    Box::new(AffineExpr::Mul(
+                        3,
+                        Box::new(AffineExpr::Var("z".to_string())),
+                    )),
+                    5,
+                )),
+            );
+            let serialized = serde_yaml::to_string(&expr).unwrap();
+            let deserialized: AffineExpr = serde_yaml::from_str(&serialized).unwrap();
+            assert_eq!(expr, deserialized);
+        }
+
+        // test deserialization followed by serialization
+        {
+            let yaml_str = "x + 2y/3 - 3z%5\n";
+            let expr: AffineExpr = serde_yaml::from_str(yaml_str).unwrap();
+            let serialized = serde_yaml::to_string(&expr).unwrap();
+            assert_eq!(yaml_str, serialized);
+        }
     }
 }
