@@ -5,7 +5,6 @@ use serde_derive::{Deserialize, Serialize};
 pub struct LoopNest {
     pub loops: Vec<Loop>,
     pub body: Vec<Instruction>,
-    pub conditionals: Vec<Conditionals>,
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -13,14 +12,6 @@ pub struct Loop {
     pub iter_name: String,
     pub bounds: (i32, i32),
     pub step: i32,
-}
-
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub struct Conditionals {
-    /// the loops that are executed conditionally
-    pub cond_comp: Vec<Instruction>,
-    pub skipped_loops: Vec<String>,
-    pub prob: f64,
 }
 
 #[cfg(test)]
