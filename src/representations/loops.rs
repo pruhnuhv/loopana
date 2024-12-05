@@ -1,22 +1,21 @@
-use serde_derive::Deserialize;
 use super::instruction::Instruction;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct LoopNest {
     pub loops: Vec<Loop>,
     pub body: Vec<Instruction>,
     pub conditionals: Vec<Conditionals>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Loop {
     pub iter_name: String,
     pub bounds: (i32, i32),
     pub step: i32,
 }
 
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Conditionals {
     /// the loops that are executed conditionally
     pub cond_comp: Vec<Instruction>,
@@ -41,5 +40,59 @@ mod tests {
         let loop_prob: LoopNest =
             serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
         println!("{:#?}", loop_prob);
+    }
+
+    #[test]
+    fn test_serde() {
+        let loop_prob_str = 
+r#"loops:
+  - iter_name: "m"
+    bounds: [0, 100]
+    step: 1
+  - iter_name: "k"
+    step: 1
+    bounds: [0, 300]
+  - iter_name: "n"
+    bounds: [0, 200]
+    step: 1
+body:
+  - !DataLoad
+    array_name: "A"
+    addr: "k + 300m"
+    reg: "Ra"
+  - !DataLoad
+    array_name: "B"
+    addr: "n + 200k"
+    reg: "Rb"
+  - !DataLoad
+    array_name: "C"
+    addr: "n + 200m"
+    reg: "Rc"
+  - !Compute
+    op: "mac"
+    src: ["Ra", "Rb", "Rc"]
+    dst: "Rc"
+  - !DataStore
+    array_name: "store_C"
+    addr: "n + 200m"
+    reg: "Rc"
+
+conditionals:
+  - cond_comp:
+      - !DataLoad
+        array_name: "load_A"
+        addr: "k + 300m"
+        reg: "Ra"
+      - !Compute
+        op: "cmp"
+        src: ["Ra"]
+        dst: "Rcmp"
+    skipped_loops: ["n"]
+    prob: 0.5
+    "#;
+        let loop_prob: LoopNest = serde_yaml::from_str(loop_prob_str).unwrap();
+        let serialized = serde_yaml::to_string(&loop_prob).unwrap().clone();
+        let deserialized: LoopNest = serde_yaml::from_str(&serialized).unwrap();
+        assert_eq!(loop_prob, deserialized);
     }
 }
