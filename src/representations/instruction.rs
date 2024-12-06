@@ -200,7 +200,7 @@ fn parse_compute(input: &str) -> IResult<&str, Instruction> {
     if let Some((cond_suffix, cond)) = cond {
         Ok((
             input,
-            Instruction::Compute (Compute {
+            Instruction::Compute(Compute {
                 op: op.to_string(),
                 src: srcs.iter().map(|s| Operand::from_str(s)).collect(),
                 dst: dst.to_string(),
@@ -211,7 +211,7 @@ fn parse_compute(input: &str) -> IResult<&str, Instruction> {
     } else {
         Ok((
             input,
-            Instruction::Compute (Compute {
+            Instruction::Compute(Compute {
                 op: op.to_string(),
                 src: srcs.iter().map(|s| Operand::from_str(s)).collect(),
                 dst: dst.to_string(),
@@ -270,9 +270,14 @@ impl fmt::Display for Instruction {
                 for idx in &data_access.addr {
                     write!(f, "[{}]", idx)?;
                 }
-                if data_access.cond.is_some(){
-                    write!(f, " ({} {})", data_access.cond_suffix.as_ref().unwrap(), data_access.cond.as_ref().unwrap())
-                }else{
+                if data_access.cond.is_some() {
+                    write!(
+                        f,
+                        " ({} {})",
+                        data_access.cond_suffix.as_ref().unwrap(),
+                        data_access.cond.as_ref().unwrap()
+                    )
+                } else {
                     Ok(())
                 }
             }
@@ -283,9 +288,14 @@ impl fmt::Display for Instruction {
                 for idx in &data_access.addr {
                     write!(f, "[{}]", idx)?;
                 }
-                if data_access.cond.is_some(){
-                    write!(f, " ({} {})", data_access.cond_suffix.as_ref().unwrap(), data_access.cond.as_ref().unwrap())
-                }else{
+                if data_access.cond.is_some() {
+                    write!(
+                        f,
+                        " ({} {})",
+                        data_access.cond_suffix.as_ref().unwrap(),
+                        data_access.cond.as_ref().unwrap()
+                    )
+                } else {
                     Ok(())
                 }
             }
@@ -313,15 +323,20 @@ impl fmt::Display for Compute {
                 write!(f, ", {}", src)?;
             }
         }
-        if self.cond.is_some(){
-            write!(f, " ({} {})", self.cond_suffix.as_ref().unwrap(), self.cond.as_ref().unwrap())
-        } else{
+        if self.cond.is_some() {
+            write!(
+                f,
+                " ({} {})",
+                self.cond_suffix.as_ref().unwrap(),
+                self.cond.as_ref().unwrap()
+            )
+        } else {
             Ok(())
         }
     }
 }
 
-impl fmt::Display for ConditionSuffix{
+impl fmt::Display for ConditionSuffix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             ConditionSuffix::EQ => write!(f, "EQ"),

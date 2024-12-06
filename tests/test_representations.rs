@@ -1,4 +1,4 @@
 #[test]
-fn test_representation(){
+fn test_representation() {
     return;
 }

@@ -5,7 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 /// Tiling: Tiles a loop with a given factor.
 /// Renaming: Renames a loop iterator.
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
-pub enum Transform{
+pub enum Transform {
     MapSpatial(String),
     MapTemporal(String),
     Tiling((String, i32)),
@@ -21,13 +21,14 @@ pub struct Transforms {
 mod tests {
     use super::*;
     use std::{fs, path::Path};
-    
+
     #[test]
     fn test_deserialize() {
         let manifest = env!("CARGO_MANIFEST_DIR");
         let file_path = Path::new(manifest).join("example/transforms.yaml");
         let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
-        let transforms: Transforms = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
+        let transforms: Transforms =
+            serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
         let expected_transforms = Transforms {
             transforms: vec![
                 Transform::MapSpatial("m".to_string()),
@@ -43,8 +44,7 @@ mod tests {
 
     #[test]
     fn test_serde() {
-        let test_str = 
-r#"transforms:
+        let test_str = r#"transforms:
     - !MapSpatial
         "m"
     - !MapTemporal

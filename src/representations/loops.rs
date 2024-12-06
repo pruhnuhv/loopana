@@ -1,4 +1,5 @@
 use super::mapping::MappingType;
+use core::fmt;
 use nom::{
     bytes::complete::tag,
     character::complete::{alpha1, digit1, multispace0, multispace1},
@@ -6,12 +7,11 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
-use core::fmt;
 use std::collections::HashMap;
 
 use super::instruction::Instruction;
-use serde_derive::{Deserialize, Serialize};
 use serde::{Deserialize, Deserializer, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct LoopNest {
@@ -27,7 +27,7 @@ pub struct LoopIter {
     pub step: i32,
 }
 
-impl <'de> Deserialize<'de> for LoopIter {
+impl<'de> Deserialize<'de> for LoopIter {
     fn deserialize<D>(deserializer: D) -> Result<LoopIter, D::Error>
     where
         D: Deserializer<'de>,
@@ -52,20 +52,19 @@ impl Serialize for LoopIter {
 
 impl fmt::Display for LoopIter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-      if self.step != 1 {
-        write!(
-            f,
-            "for {} in ({}..{}) step {}",
-            self.iter_name, self.bounds.0, self.bounds.1, self.step
-        )
-      }
-      else {
-        write!(
-            f,
-            "for {} in ({}..{})",
-            self.iter_name, self.bounds.0, self.bounds.1
-        )
-      }
+        if self.step != 1 {
+            write!(
+                f,
+                "for {} in ({}..{}) step {}",
+                self.iter_name, self.bounds.0, self.bounds.1, self.step
+            )
+        } else {
+            write!(
+                f,
+                "for {} in ({}..{})",
+                self.iter_name, self.bounds.0, self.bounds.1
+            )
+        }
     }
 }
 
@@ -114,7 +113,6 @@ pub struct LoopProperties {
     pub mapping: HashMap<String, MappingType>,
 }
 
-
 // TODO move this to integration tests
 #[cfg(test)]
 mod tests {
@@ -150,7 +148,7 @@ body:
     "#;
         let loop_prob: LoopNest = serde_yaml::from_str(loop_prob_str).unwrap();
         let serialized = serde_yaml::to_string(&loop_prob).unwrap().clone();
-    println!("{}", serialized);
+        println!("{}", serialized);
         let deserialized: LoopNest = serde_yaml::from_str(&serialized).unwrap();
         assert_eq!(loop_prob, deserialized);
     }
