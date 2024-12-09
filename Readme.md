@@ -1,3 +1,3 @@
 TODOs:
-implement affine transforms (filling the TODOs in passes/transform_pass.rs)
-implement properties for loop prob
+- implement properties for loop prob
+- Handle the case when loop bound is not a multiple of the tiling factor

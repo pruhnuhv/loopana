@@ -1,0 +1,15 @@
+transforms:
+    - !Tiling ["n", "simd", 4]
+    - !Tiling ["n", "x", 8]
+    - !Tiling ["m", "y", 8]
+    - !Renaming
+      - "m"
+      - "ty"
+    - !Renaming
+      - "n"
+      - "tn"
+    - !MapSpatial "x"
+    - !MapSpatial "y"
+    - !MapSpatial "simd"
+    - !MapTemporal "ty"
+    - !MapTemporal "tn"

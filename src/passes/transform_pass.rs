@@ -6,7 +6,7 @@ use crate::representations::mapping::MappingType;
 use crate::representations::transforms::{Transform, Transforms};
 
 pub trait Transforming {
-    fn apply(&self, transforms: &Transform) -> Self;
+    fn apply(&self, transform: &Transform) -> Self;
     fn apply_all(&self, transforms: &Transforms) -> Self
     where
         Self: Clone,
@@ -22,6 +22,19 @@ pub trait Transforming {
 impl Transforming for Coeff {
     fn apply(&self, transform: &Transform) -> Self {
         match (self, transform) {
+            // Coeff::Const
+            (Coeff::Const(_), _) => self.clone(),
+
+            // Coeff::ConstVar
+            (Coeff::ConstVar(_), Transform::MapSpatial(_)) => self.clone(),
+            (Coeff::ConstVar(_), Transform::MapTemporal(_)) => self.clone(),
+            (Coeff::ConstVar(var), Transform::Tiling((old, _, _))) => {
+                if var == old {
+                    panic!("You are trying to tile the constant variable {} that is used as a coefficient. This is not allowed.", var);
+                } else {
+                    self.clone()
+                }
+            }
             (Coeff::ConstVar(var), Transform::Renaming((old_iter, new_iter))) => {
                 if var == old_iter {
                     Coeff::ConstVar(new_iter.clone())
@@ -29,11 +42,14 @@ impl Transforming for Coeff {
                     self.clone()
                 }
             }
-            (Coeff::ConstVar(_), Transform::Tiling(_)) => {
-                // TODO
-                self.clone()
+            (Coeff::ConstVar(_), Transform::Reorder(_)) => self.clone(),
+
+            // Coeff::Mul
+            (Coeff::Mul(lhs, rhs), _) => {
+                let new_lhs = lhs.apply(transform);
+                let new_rhs = rhs.apply(transform);
+                Coeff::Mul(Box::new(new_lhs), Box::new(new_rhs))
             }
-            _ => self.clone(),
         }
     }
 }
@@ -41,6 +57,22 @@ impl Transforming for Coeff {
 impl Transforming for AffineExpr {
     fn apply(&self, transform: &Transform) -> Self {
         match (self, transform) {
+            // AffineExpr::Var
+            (AffineExpr::Var(_), Transform::MapSpatial(_)) => self.clone(),
+            (AffineExpr::Var(_), Transform::MapTemporal(_)) => self.clone(),
+            (AffineExpr::Var(var), Transform::Tiling((old, new, factor))) => {
+                if var == old {
+                    AffineExpr::Add(
+                        Box::new(AffineExpr::Mul(
+                            Coeff::Const(*factor),
+                            Box::new(AffineExpr::Var(new.clone())),
+                        )),
+                        Box::new(AffineExpr::Var(var.clone())),
+                    )
+                } else {
+                    self.clone()
+                }
+            }
             (AffineExpr::Var(var_name), Transform::Renaming((old_iter, new_iter))) => {
                 if var_name == old_iter {
                     AffineExpr::Var(new_iter.clone())
@@ -48,32 +80,40 @@ impl Transforming for AffineExpr {
                     self.clone()
                 }
             }
-            (AffineExpr::Var(_), Transform::Tiling(_)) => {
-                // TODO
-                self.clone()
-            }
-            (AffineExpr::Var(_), _) => self.clone(),
+            (AffineExpr::Var(_), Transform::Reorder(_)) => self.clone(),
+
+            // AffineExpr::Const
             (AffineExpr::Const(_), _) => self.clone(),
+
+            // AffineExpr::Add
             (AffineExpr::Add(lhs, rhs), _) => {
                 let new_lhs = lhs.apply(transform);
                 let new_rhs = rhs.apply(transform);
                 AffineExpr::Add(Box::new(new_lhs), Box::new(new_rhs))
             }
+
+            // AffineExpr::Sub
             (AffineExpr::Sub(lhs, rhs), _) => {
                 let new_lhs = lhs.apply(transform);
                 let new_rhs = rhs.apply(transform);
                 AffineExpr::Sub(Box::new(new_lhs), Box::new(new_rhs))
             }
+
+            // AffineExpr::Mul
             (AffineExpr::Mul(coeff, expr), _) => {
                 let new_coeff = coeff.apply(transform);
                 let new_expr = expr.apply(transform);
                 AffineExpr::Mul(new_coeff, Box::new(new_expr))
             }
+
+            // AffineExpr::Div
             (AffineExpr::Div(expr, divisor), _) => {
                 let new_expr = expr.apply(transform);
                 let new_divisor = divisor.apply(transform);
                 AffineExpr::Div(Box::new(new_expr), new_divisor)
             }
+
+            // AffineExpr::Mod
             (AffineExpr::Mod(expr, modulus), _) => {
                 let new_expr = expr.apply(transform);
                 let new_modulus = modulus.apply(transform);
@@ -129,6 +169,40 @@ impl Transforming for Instruction {
     }
 }
 
+impl Transforming for LoopIter {
+    fn apply(&self, transform: &Transform) -> Self {
+        match transform {
+            Transform::MapSpatial(_) => self.clone(),
+            Transform::MapTemporal(_) => self.clone(),
+            // Tiling transform applied to the iterator it self is only changing the bound
+            // The extra loop (with the new iterator) is created by LoopNest
+            Transform::Tiling((old, new, factor)) => {
+                if self.iter_name == *old {
+                    LoopIter {
+                        iter_name: old.clone(),
+                        bounds: (self.bounds.0, self.bounds.1 / factor),
+                        step: self.step,
+                    }
+                } else {
+                    self.clone()
+                }
+            }
+            Transform::Renaming((old_iter, new_iter)) => {
+                if self.iter_name == *old_iter {
+                    LoopIter {
+                        iter_name: new_iter.clone(),
+                        bounds: self.bounds,
+                        step: self.step,
+                    }
+                } else {
+                    self.clone()
+                }
+            }
+            Transform::Reorder(_) => self.clone(),
+        }
+    }
+}
+
 impl Transforming for LoopProperties {
     fn apply(&self, transform: &Transform) -> Self {
         match transform {
@@ -180,95 +254,125 @@ impl Transforming for LoopProperties {
                     mapping: new_mapping,
                 }
             }
-            Transform::Tiling((iter_to_tile, factor)) => {
-                // TODO, implement tiling
-                let new_mapping = self
-                    .mapping
-                    .iter()
-                    .map(|(iter_name, mapping_type)| {
-                        if iter_name == iter_to_tile {
-                            (iter_name.clone(), MappingType::Spatial)
-                        } else {
-                            (iter_name.clone(), mapping_type.clone())
-                        }
-                    })
-                    .collect();
+            Transform::Tiling((old, new, factor)) => {
+                // The old mapping is kept, add a new entry for the new iterator if the old iterator was in the map
+                let found = self.mapping.get(old);
+                let mut new_mapping = self.mapping.clone();
+                if found.is_some() {
+                    new_mapping.insert(new.clone(), MappingType::Spatial);
+                }
                 LoopProperties {
                     mapping: new_mapping,
                 }
             }
-        }
-    }
-}
-
-impl Transforming for LoopIter {
-    fn apply(&self, transform: &Transform) -> Self {
-        match transform {
-            Transform::Renaming((old_iter, new_iter)) => {
-                if self.iter_name == *old_iter {
-                    LoopIter {
-                        iter_name: new_iter.clone(),
-                        bounds: self.bounds,
-                        step: self.step,
-                    }
-                } else {
-                    self.clone()
-                }
-            }
-            Transform::Tiling((iter_to_tile, factor)) => {
-                // TODO
-                self.clone()
-            }
-            _ => self.clone(),
+            Transform::Reorder((iter1, iter2)) => self.clone(),
         }
     }
 }
 
 impl Transforming for LoopNest {
     fn apply(&self, transform: &Transform) -> Self {
-        let new_iters = self
-            .iters
-            .iter()
-            .map(|iter| iter.apply(transform))
-            .collect();
-        let new_body = self
-            .body
-            .iter()
-            .map(|instr| instr.apply(transform))
-            .collect();
-        let new_properties = match &self.properties {
-            Some(properties) => Some(properties.apply(transform)),
-            None => None,
-        };
-        LoopNest {
-            iters: new_iters,
-            body: new_body,
-            properties: new_properties,
+        match transform {
+            Transform::Tiling((old, new, factor)) => {
+                let mut new_iters: Vec<LoopIter> = self
+                    .iters
+                    .iter()
+                    .map(|iter| iter.apply(transform))
+                    .collect();
+                let new_body = self
+                    .body
+                    .iter()
+                    .map(|instr| instr.apply(transform))
+                    .collect();
+                let new_properties = match &self.properties {
+                    Some(properties) => Some(properties.apply(transform)),
+                    None => None,
+                };
+                // Add a new loop with the new iterator
+                // The step is the same as the old iterator
+                // The upper bound is the factor
+                let new_iter = LoopIter {
+                    iter_name: new.clone(),
+                    bounds: (0, *factor),
+                    step: self
+                        .iters
+                        .iter()
+                        .find(|iter| iter.iter_name == *old)
+                        .unwrap()
+                        .step,
+                };
+                // insert the new iterator just after the old iterator
+                let idx = new_iters.iter().position(|iter| iter.iter_name == *old);
+                assert!(
+                    idx.is_some(),
+                    "The iterator {} to tile was not found in the loop nest, current iterators: {:?}",
+                    old,
+                    new_iters
+                );
+                let idx = idx.unwrap();
+                new_iters.insert(idx + 1, new_iter);
+
+                LoopNest {
+                    iters: new_iters,
+                    body: new_body,
+                    properties: new_properties,
+                }
+            }
+
+            Transform::Reorder((iter1, iter2)) => {
+                let mut new_iters: Vec<LoopIter> = self
+                    .iters
+                    .iter()
+                    .map(|iter| iter.apply(transform))
+                    .collect();
+                let new_body = self
+                    .body
+                    .iter()
+                    .map(|instr| instr.apply(transform))
+                    .collect();
+                let new_properties = match &self.properties {
+                    Some(properties) => Some(properties.apply(transform)),
+                    None => None,
+                };
+                // Reorder the iterators
+                let idx1 = new_iters
+                    .iter()
+                    .position(|iter| iter.iter_name == *iter1)
+                    .unwrap();
+                let idx2 = new_iters
+                    .iter()
+                    .position(|iter| iter.iter_name == *iter2)
+                    .unwrap();
+                new_iters.swap(idx1, idx2);
+
+                LoopNest {
+                    iters: new_iters,
+                    body: new_body,
+                    properties: new_properties,
+                }
+            }
+            // MapSpatial, MapTemporal, Renaming
+            Transform::MapSpatial(_) | Transform::MapTemporal(_) | Transform::Renaming(_) => {
+                let new_iters = self
+                    .iters
+                    .iter()
+                    .map(|iter| iter.apply(transform))
+                    .collect();
+                let new_body = self
+                    .body
+                    .iter()
+                    .map(|instr| instr.apply(transform))
+                    .collect();
+                let new_properties = match &self.properties {
+                    Some(properties) => Some(properties.apply(transform)),
+                    None => None,
+                };
+                LoopNest {
+                    iters: new_iters,
+                    body: new_body,
+                    properties: new_properties,
+                }
+            }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::{fs, path::Path};
-
-    #[test]
-    fn test_transforms() {
-        let manifest = env!("CARGO_MANIFEST_DIR");
-        let file_path = Path::new(manifest).join("example/transforms.yaml");
-        let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
-        let transforms: Transforms =
-            serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
-        let problem_file_path = Path::new(manifest).join("example/prob.yaml");
-        let yaml_str = fs::read_to_string(problem_file_path).expect("Failed to read YAML file");
-        let loop_prob: LoopNest =
-            serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
-        let transformed_loop_prob = loop_prob.apply_all(&transforms);
-        // Serialize the transformed loop prob
-        let serialized = serde_yaml::to_string(&transformed_loop_prob).unwrap();
-        // Save to file
-        let transformed_file_path = Path::new(manifest).join("example/transformed_prob.yaml");
-        fs::write(transformed_file_path, serialized).expect("Failed to write to file");
     }
 }

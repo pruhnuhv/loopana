@@ -1,2 +1,2 @@
-mod mapper;
-mod transform_pass;
+pub mod mapper;
+pub mod transform_pass;

@@ -27,45 +27,9 @@ pub struct LoopIter {
     pub step: i32,
 }
 
-impl<'de> Deserialize<'de> for LoopIter {
-    fn deserialize<D>(deserializer: D) -> Result<LoopIter, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        // Deserialize the input as a string
-        let s = String::deserialize(deserializer)?;
-        // Parse the string into an AffineExpr
-        parse_loop_iter(&s)
-            .map(|(_, expr)| expr)
-            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
-    }
-}
-
-impl Serialize for LoopIter {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
-impl fmt::Display for LoopIter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.step != 1 {
-            write!(
-                f,
-                "for {} in ({}..{}) step {}",
-                self.iter_name, self.bounds.0, self.bounds.1, self.step
-            )
-        } else {
-            write!(
-                f,
-                "for {} in ({}..{})",
-                self.iter_name, self.bounds.0, self.bounds.1
-            )
-        }
-    }
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct LoopProperties {
+    pub mapping: HashMap<String, MappingType>,
 }
 
 fn parse_identifier(input: &str) -> IResult<&str, String> {
@@ -108,9 +72,45 @@ fn parse_loop_iter(input: &str) -> IResult<&str, LoopIter> {
     ))
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct LoopProperties {
-    pub mapping: HashMap<String, MappingType>,
+impl<'de> Deserialize<'de> for LoopIter {
+    fn deserialize<D>(deserializer: D) -> Result<LoopIter, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        // Deserialize the input as a string
+        let s = String::deserialize(deserializer)?;
+        // Parse the string into an AffineExpr
+        parse_loop_iter(&s)
+            .map(|(_, expr)| expr)
+            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+    }
+}
+
+impl Serialize for LoopIter {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl fmt::Display for LoopIter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.step != 1 {
+            write!(
+                f,
+                "for {} in ({}..{}).step({})",
+                self.iter_name, self.bounds.0, self.bounds.1, self.step
+            )
+        } else {
+            write!(
+                f,
+                "for {} in ({}..{})",
+                self.iter_name, self.bounds.0, self.bounds.1
+            )
+        }
+    }
 }
 
 // TODO move this to integration tests
@@ -125,7 +125,7 @@ mod tests {
     fn test_deserialize() {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         // Construct the file path to loopprob.yaml
-        let file_path = Path::new(manifest_dir).join("example/prob.yaml");
+        let file_path = Path::new(manifest_dir).join("example/prob.loop");
         let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
         let loop_prob: LoopNest =
             serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");

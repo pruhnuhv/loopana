@@ -1,0 +1,15 @@
+iters:
+- for ty in (0..16)
+- for y in (0..8)
+- for k in (0..256)
+- for tn in (0..16)
+- for x in (0..8)
+- for simd in (0..4)
+body:
+- Ra <= A[8 * y + ty][k]
+- cmp Rcmp Ra, $0
+- Rb <= B[k][4 * simd + 8 * x + tn] (LE Rcmp)
+- Rc <= C[8 * y + ty][4 * simd + 8 * x + tn] (LE Rcmp)
+- mac Rc1 Ra, Rb, Rc (LE Rcmp)
+- Rc1 => C[8 * y + ty][4 * simd + 8 * x + tn] (LE Rcmp)
+properties: null

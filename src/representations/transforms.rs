@@ -8,8 +8,9 @@ use serde_derive::{Deserialize, Serialize};
 pub enum Transform {
     MapSpatial(String),
     MapTemporal(String),
-    Tiling((String, i32)),
+    Tiling((String, String, i32)),
     Renaming((String, String)),
+    Reorder((String, String)),
 }
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -24,9 +25,24 @@ mod tests {
 
     #[test]
     fn test_deserialize() {
-        let manifest = env!("CARGO_MANIFEST_DIR");
-        let file_path = Path::new(manifest).join("example/transforms.yaml");
-        let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
+        let yaml_str = r#"
+transforms:
+    - !MapSpatial
+        "m"
+    - !MapSpatial
+        "k"
+    - !MapTemporal
+        "n"
+    - !Renaming
+        - "m"
+        - "x"
+    - !Renaming
+        - "k"
+        - "SIMD"
+    - !Renaming
+        - "n"
+        - "y"
+        "#;
         let transforms: Transforms =
             serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
         let expected_transforms = Transforms {
@@ -51,6 +67,7 @@ mod tests {
         "n"
     - !Tiling
         - "k"
+        - "tiled_k"
         - 2
     - !Renaming
         - "m"
@@ -60,7 +77,7 @@ mod tests {
             transforms: vec![
                 Transform::MapSpatial("m".to_string()),
                 Transform::MapTemporal("n".to_string()),
-                Transform::Tiling(("k".to_string(), 2)),
+                Transform::Tiling(("k".to_string(), "tiled_k".to_string(), 2)),
                 Transform::Renaming(("m".to_string(), "m1".to_string())),
             ],
         };

@@ -3,10 +3,14 @@
 #   for k in 0..300
 #     for n in 0..200
 #       C[m][n] += A[m][k] * B[k][n]
+
+# iterators description: loops in the order of execution,
+# Syntax: for <iter_name> in (<lower_bound>, <upper_bound>).step(x)
+# step is optional, default 1
 iters:
-  - for m in (0..100).step(1)
-  - for k in (0..300)
-  - for n in (0..200)
+  - for m in (0..128).step(1)
+  - for k in (0..256)
+  - for n in (0..512)
 body:
   - Ra <= A[m][k]
   - cmp Rcmp Ra, $0

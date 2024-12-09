@@ -1,5 +1,4 @@
-mod passes;
-mod representations;
+use loopana;
 fn main() {
     println!("Hello, world!");
 }
