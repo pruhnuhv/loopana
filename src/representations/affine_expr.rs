@@ -8,7 +8,7 @@ use nom::{
     IResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
-use std::fmt;
+use std::{clone, fmt, ops::Mul};
 
 /// Represents an affine expression.
 /// It can be a constant, a variable, or an affine combination of variables.
@@ -29,6 +29,193 @@ pub enum Coeff {
     Const(i32),
     ConstVar(String),
     Mul(Box<Coeff>, Box<Coeff>),
+}
+
+impl Coeff {
+    /// make the expression canonical by always putting the constant on the left
+    pub fn normalize(&self) -> Coeff {
+        let mut e = self.simplify();
+        match e {
+            Coeff::Const(_) => self.clone(),
+            Coeff::ConstVar(_) => self.clone(),
+            Coeff::Mul(e1, e2) => {
+                let e1 = e1.normalize();
+                let e2 = e2.normalize();
+                match (e1.clone(), e2.clone()) {
+                    (Coeff::Const(_), Coeff::Const(_)) => Coeff::Mul(Box::new(e2), Box::new(e1)),
+                    (Coeff::Const(_), _) => Coeff::Mul(Box::new(e2), Box::new(e1)),
+                    (_, Coeff::Const(_)) => Coeff::Mul(Box::new(e2), Box::new(e1)),
+                    (_, _) => Coeff::Mul(Box::new(e1), Box::new(e2)),
+                }
+            }
+        }
+    }
+
+    /// Simplify the const expression in the AST,
+    /// e.g., 0 * x = 0, 1 * x = x, x * 1 = x, x * 0 = 0
+    /// and 3 * (3 * x) = 9 * x, etc.
+    fn simplify(&self) -> Coeff {
+        match self {
+            Coeff::Const(_) => self.clone(),
+            Coeff::ConstVar(_) => self.clone(),
+            Coeff::Mul(e1, e2) => {
+                let e1 = e1.simplify();
+                let e2 = e2.simplify();
+                match (e1.clone(), e2.clone()) {
+                    (Coeff::Const(0), _) => Coeff::Const(0),
+                    (_, Coeff::Const(0)) => Coeff::Const(0),
+                    (Coeff::Const(1), e) => e,
+                    (e, Coeff::Const(1)) => e,
+                    (Coeff::Const(c1), Coeff::Const(c2)) => Coeff::Const(c1 * c2),
+                    (Coeff::Const(c1), Coeff::Mul(e1, e2)) => match (*e1, *e2) {
+                        (Coeff::Const(c2), e2) => {
+                            Coeff::Mul(Box::new(Coeff::Const(c1 * c2)), Box::new(e2))
+                        }
+                        (e1, Coeff::Const(c2)) => {
+                            Coeff::Mul(Box::new(Coeff::Const(c1 * c2)), Box::new(e1))
+                        }
+                        (e1, e2) => Coeff::Mul(
+                            Box::new(Coeff::Const(c1)),
+                            Box::new(Coeff::Mul(Box::new(e1), Box::new(e2))),
+                        ),
+                    },
+                    (Coeff::Mul(e1, e2), Coeff::Const(c1)) => match (*e1, *e2) {
+                        (Coeff::Const(c2), e2) => {
+                            Coeff::Mul(Box::new(Coeff::Const(c1 * c2)), Box::new(e2))
+                        }
+                        (e1, Coeff::Const(c2)) => {
+                            Coeff::Mul(Box::new(Coeff::Const(c1 * c2)), Box::new(e1))
+                        }
+                        (e1, e2) => Coeff::Mul(
+                            Box::new(Coeff::Const(c1)),
+                            Box::new(Coeff::Mul(Box::new(e1), Box::new(e2))),
+                        ),
+                    },
+                    (Coeff::Mul(_, _), Coeff::Mul(_, _))
+                    | (Coeff::ConstVar(_), _)
+                    | (_, Coeff::ConstVar(_)) => Coeff::Mul(Box::new(e1), Box::new(e2)),
+                }
+            }
+        }
+    }
+}
+
+impl AffineExpr {
+    /// Simplify the expression by grouping constatants:
+    /// 1 + x + 2 = 3 + x; x + 1 + 2 = x + 3; 1 + x + 2 + y = 3 + x + y
+    fn simplify(&self) -> AffineExpr {
+        match self {
+            AffineExpr::Const(_) => self.clone(),
+            AffineExpr::Var(_) => self.clone(),
+            AffineExpr::Add(e1, e2) => {
+                let e1 = e1.simplify();
+                let e2 = e2.simplify();
+                match (e1.clone(), e2.clone()) {
+                    // Const + Const = Const
+                    (AffineExpr::Const(c1), AffineExpr::Const(c2)) => AffineExpr::Const(c1 + c2),
+                    // 0 + Const = Const
+                    (AffineExpr::Const(0), e) => e,
+                    // Const + 0 = Const
+                    (e, AffineExpr::Const(0)) => e,
+                    // Add(Const, Add(Const, e)) = Add(Const, e)
+                    // Add(Const, Add(e, Const)) = Add(Const, e)
+                    (AffineExpr::Const(c1), AffineExpr::Add(e1, e2)) => {
+                        match (*e1.clone(), *e2.clone()) {
+                            (AffineExpr::Const(c2), e2) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c1 + c2)), Box::new(e2))
+                            }
+                            (e1, AffineExpr::Const(c2)) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c1 + c2)), Box::new(e1))
+                            }
+                            (e1, e2) => AffineExpr::Add(
+                                Box::new(AffineExpr::Const(c1)),
+                                Box::new(AffineExpr::Add(Box::new(e1), Box::new(e2))),
+                            ),
+                        }
+                    }
+                    // Add(Add(Const, e), Const) = Add(Const, e)
+                    // Add(Add(e, Const), Const) = Add(Const, e)
+                    (AffineExpr::Add(e1, e2), AffineExpr::Const(c1)) => {
+                        match (*e1.clone(), *e2.clone()) {
+                            (AffineExpr::Const(c2), e2) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c1 + c2)), Box::new(e2))
+                            }
+                            (e1, AffineExpr::Const(c2)) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c1 + c2)), Box::new(e1))
+                            }
+                            (e1, e2) => AffineExpr::Add(
+                                Box::new(AffineExpr::Const(c1)),
+                                Box::new(AffineExpr::Add(Box::new(e1), Box::new(e2))),
+                            ),
+                        }
+                    }
+
+                    // Add(c1, Sub(e, c2)) = Add(c1 - c2, e)
+                    // Add(c1, Sub(c2, e)) = Sub(c1 + c2, e)
+                    (AffineExpr::Const(c1), AffineExpr::Sub(e1, e2)) => {
+                        match (*e1.clone(), *e2.clone()) {
+                            (AffineExpr::Const(c2), e2) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c1 - c2)), Box::new(e2))
+                            }
+                            (e1, AffineExpr::Const(c2)) => {
+                                AffineExpr::Sub(Box::new(AffineExpr::Const(c1 + c2)), Box::new(e1))
+                            }
+                            (e1, e2) => AffineExpr::Add(
+                                Box::new(AffineExpr::Const(c1)),
+                                Box::new(AffineExpr::Sub(Box::new(e1), Box::new(e2))),
+                            ),
+                        }
+                    }
+                    // Add(Sub(e, c1), c2) = Add(c2 - c1, e)
+                    // Add(Sub(c1, e), c2) = Sub(c1 + c2, e)
+                    (AffineExpr::Sub(e1, e2), AffineExpr::Const(c)) => {
+                        match (*e1.clone(), *e2.clone()) {
+                            (AffineExpr::Const(c1), e2) => {
+                                AffineExpr::Add(Box::new(AffineExpr::Const(c - c1)), Box::new(e2))
+                            }
+                            (e1, AffineExpr::Const(c1)) => {
+                                AffineExpr::Sub(Box::new(AffineExpr::Const(c1 + c)), Box::new(e1))
+                            }
+                            (e1, e2) => AffineExpr::Add(
+                                Box::new(AffineExpr::Const(c)),
+                                Box::new(AffineExpr::Sub(Box::new(e1), Box::new(e2))),
+                            ),
+                        }
+                    }
+
+                    // Add(e, Const) = Add(Const, e)
+                    (e, AffineExpr::Const(c)) => {
+                        AffineExpr::Add(Box::new(AffineExpr::Const(c)), Box::new(e))
+                    }
+
+                    // Default, do nothing
+                    (e1, e2) => AffineExpr::Add(Box::new(e1), Box::new(e2)),
+                }
+            } // End of Add
+            AffineExpr::Sub(_, _) => {
+                // TODO
+                self.clone()
+            }
+            AffineExpr::Mul(coeff, e) => {
+                let coeff = coeff.normalize();
+                let e = e.simplify();
+                // TODO, the possible optimizations are not done
+                AffineExpr::Mul(coeff, Box::new(e))
+            }
+            AffineExpr::Div(e, coeff) => {
+                let e = e.simplify();
+                let coeff = coeff.normalize();
+                // TODO, the possible optimizations are not done
+                AffineExpr::Div(Box::new(e), coeff)
+            }
+            AffineExpr::Mod(e, coeff) => {
+                let e = e.simplify();
+                let coeff = coeff.normalize();
+                // TODO, the possible optimizations are not done
+                AffineExpr::Mod(Box::new(e), coeff)
+            }
+        }
+    }
 }
 
 impl<'de> Deserialize<'de> for AffineExpr {
@@ -281,4 +468,7 @@ mod tests {
             assert_eq!(expr, deserialized);
         }
     }
+
+    #[test]
+    fn test_normalization() {}
 }
