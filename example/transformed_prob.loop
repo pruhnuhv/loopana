@@ -6,10 +6,10 @@ iters:
 - for x in (0..8)
 - for simd in (0..4)
 body:
-- Ra <= A[8 * y + ty][k]
+- Ra <= A[ty][y][k]
 - cmp Rcmp Ra, $0
-- Rb <= B[k][4 * simd + 8 * x + tn] (LE Rcmp)
-- Rc <= C[8 * y + ty][4 * simd + 8 * x + tn] (LE Rcmp)
+- Rb <= B[k][tn][x][simd] (LE Rcmp)
+- Rc <= C[ty][y][tn][x][simd] (LE Rcmp)
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
-- Rc1 => C[8 * y + ty][4 * simd + 8 * x + tn] (LE Rcmp)
+- Rc1 => C[ty][y][tn][x][simd] (LE Rcmp)
 properties: null

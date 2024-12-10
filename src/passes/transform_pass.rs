@@ -139,7 +139,24 @@ impl Transforming for Conditional {
 
 impl Transforming for DataAccess {
     fn apply(&self, transform: &Transform) -> Self {
-        let new_addr = self.addr.iter().map(|idx| idx.apply(transform)).collect();
+        let mut new_addr = Vec::new();
+        for idx in &self.addr {
+            match (transform, idx) {
+                // If tiling and the index is exactly the variable to be tiled, add the new index just after the old one
+                // E.g. A[x][y][z] -> A[x][y][y'][z] if tiling y to y' by some factor
+                // The factor is only useful for the upper bound of the iterator, so here can ignore it
+                (Transform::Tiling((old, new, _)), AffineExpr::Var(var)) => {
+                    if var == old {
+                        let new_idx = AffineExpr::Var(new.clone());
+                        new_addr.push(idx.clone());
+                        new_addr.push(new_idx);
+                    } else {
+                        new_addr.push(idx.apply(transform));
+                    }
+                }
+                _ => new_addr.push(idx.apply(transform)),
+            }
+        }
         DataAccess {
             array_name: self.array_name.clone(),
             addr: new_addr,

@@ -18,4 +18,9 @@ fn test_transforms() {
     // Save to file
     let transformed_file_path = Path::new(manifest).join("example/transformed_prob.loop");
     fs::write(transformed_file_path, serialized).expect("Failed to write to file");
+
+    // try to load it again
+    let transformed_file_path = Path::new(manifest).join("example/transformed_prob.loop");
+    let yaml_str = fs::read_to_string(transformed_file_path).expect("Failed to read YAML file");
+    let _loop_prob: LoopNest = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
 }
