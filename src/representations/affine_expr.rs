@@ -8,7 +8,7 @@ use nom::{
     IResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
-use std::{clone, fmt, ops::Mul};
+use std::fmt;
 
 /// Represents an affine expression.
 /// It can be a constant, a variable, or an affine combination of variables.
@@ -34,7 +34,7 @@ pub enum Coeff {
 impl Coeff {
     /// make the expression canonical by always putting the constant on the left
     pub fn normalize(&self) -> Coeff {
-        let mut e = self.simplify();
+        let e = self.simplify();
         match e {
             Coeff::Const(_) => self.clone(),
             Coeff::ConstVar(_) => self.clone(),

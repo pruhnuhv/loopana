@@ -1,18 +1,17 @@
-use super::affine_expr::{self, parse_expr, AffineExpr, Coeff};
+use super::affine_expr::{self, AffineExpr};
 use nom::{
     branch::alt,
-    bytes::complete::{tag, take_while1},
+    bytes::complete::tag,
     character::complete::{
-        alpha1, alphanumeric0, alphanumeric1, char, digit1, multispace0, multispace1, one_of,
+        alpha1, alphanumeric0, alphanumeric1, char, digit1, multispace0, multispace1,
     },
-    combinator::{map, opt, recognize},
-    multi::{many0, separated_list0, separated_list1},
-    sequence::{delimited, pair, preceded, separated_pair, terminated, tuple},
+    combinator::{opt, recognize},
+    multi::{separated_list0, separated_list1},
+    sequence::{delimited, pair, preceded, terminated, tuple},
     IResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
-use serde_derive::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt};
+use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Instruction {
@@ -401,8 +400,8 @@ impl Operand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
-    use std::path::Path;
+    
+    
 
     #[test]
     fn test_parse_instruction() {
