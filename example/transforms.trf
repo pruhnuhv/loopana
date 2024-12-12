@@ -1,9 +1,9 @@
 // tiling n into simd by 4
  - n -> (n, simd) by 4
  - !Tiling n -> (n, x) by 8 // tiling n into x by 8
- - !Tiling m -> (m, y) by 8
- - m -> ty
+ - !Tiling k -> (k, y) by 8
  - n -> tn
+ - k -> tk
  - !MapSpatial x => Spatial
  - y => Spatial
  - !MapSpatial simd => Spatial

@@ -1,21 +1,21 @@
 iters:
-- for ty in (0..16)
+- for m in (0..128)
+- for tk in (0..32)
 - for tn in (0..16)
-- for k in (0..256)
 - for x in (0..8)
 - for y in (0..8)
 - for simd in (0..4)
 body:
-- Ra <= A[ty][y][k]
+- Ra <= A[m][tk][y]
 - cmp Rcmp Ra, $0
-- Rb <= B[k][tn][x][simd] (LE Rcmp)
-- Rc <= C[ty][y][tn][x][simd] (LE Rcmp)
+- Rb <= B[tk][y][tn][x][simd] (LE Rcmp)
+- Rc <= C[m][tn][x][simd] (LE Rcmp)
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
-- Rc1 => C[ty][y][tn][x][simd] (LE Rcmp)
+- Rc1 => C[m][tn][x][simd] (LE Rcmp)
 properties:
   mapping:
-    ty: Temporal
     tn: Temporal
+    ty: Temporal
     x: Spatial
-    y: Spatial
     simd: Spatial
+    y: Spatial
