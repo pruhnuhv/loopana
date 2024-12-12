@@ -6,9 +6,9 @@ use std::{fs, path::Path};
 fn test_transforms() {
     let manifest = env!("CARGO_MANIFEST_DIR");
     let file_path = Path::new(manifest).join("example/transforms.trf");
-    let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
+    let input_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
     let transforms: Transforms =
-        serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
+        Transforms::from_str(&input_str).expect("Failed to deserialize YAML");
     let problem_file_path = Path::new(manifest).join("example/prob.loop");
     let yaml_str = fs::read_to_string(problem_file_path).expect("Failed to read YAML file");
     let loop_prob: LoopNest = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");

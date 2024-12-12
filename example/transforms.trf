@@ -1,15 +1,12 @@
-transforms:
-  - !Tiling ["n", "simd", 4]
-  - !Tiling ["n", "x", 8]
-  - !Tiling ["m", "y", 8]
-  - !Renaming
-    - "m"
-    - "ty"
-  - !Renaming
-    - "n"
-    - "tn"
-  - !MapSpatial "x"
-  - !MapSpatial "y"
-  - !MapSpatial "simd"
-  - !MapTemporal "ty"
-  - !MapTemporal "tn"
+// tiling n into simd by 4
+ - n -> (n, simd) by 4
+ - !Tiling n -> (n, x) by 8 // tiling n into x by 8
+ - !Tiling m -> (m, y) by 8
+ - m -> ty
+ - n -> tn
+ - !MapSpatial x => Spatial
+ - y => Spatial
+ - !MapSpatial simd => Spatial
+ - !MapTemporal ty => Temporal
+ - !MapTemporal tn => Temporal
+ 
