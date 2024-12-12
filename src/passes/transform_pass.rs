@@ -195,6 +195,12 @@ impl Transforming for LoopIter {
             // The extra loop (with the new iterator) is created by LoopNest
             Transform::Tiling((old, new, factor)) => {
                 if self.iter_name == *old {
+                    if self.bounds.1 % factor != 0 {
+                        panic!(
+                        "The upper bound: {} of the iterator {} is not divisible by the factor: {}",
+                        self.bounds.1, self.iter_name, factor
+                    );
+                    }
                     LoopIter {
                         iter_name: old.clone(),
                         bounds: (self.bounds.0, self.bounds.1 / factor),
