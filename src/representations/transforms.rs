@@ -105,6 +105,20 @@ fn parse_mapping(input: &str) -> IResult<&str, Transform> {
     }
 }
 
+fn parse_reorder(input: &str) -> IResult<&str, Transform> {
+    let prefix = delimited(space0, tag("!Reorder"), space0);
+    let (input, (_, old_var, _, new_var)) = tuple((
+        opt(prefix),
+        preceded(space0, parse_identifier),
+        terminated(tag("<->"), space0),
+        parse_identifier,
+    ))(input)?;
+    Ok((
+        input,
+        Transform::Reorder((old_var.to_string(), new_var.to_string())),
+    ))
+}
+
 fn parse_comment(input: &str) -> IResult<&str, ()> {
     let (input, _) = tuple((multispace0, tag("//"), not_line_ending, opt(line_ending)))(input)?;
     Ok((input, ()))
@@ -116,7 +130,12 @@ fn ws_and_comments(input: &str) -> IResult<&str, ()> {
 }
 
 fn parse_transform(input: &str) -> IResult<&str, Transform> {
-    alt((parse_tiling, parse_renaming, parse_mapping))(input)
+    cut(alt((
+        parse_tiling,
+        parse_renaming,
+        parse_mapping,
+        parse_reorder,
+    )))(input)
 }
 
 fn parse_transforms(input: &str) -> IResult<&str, Transforms> {
@@ -187,7 +206,7 @@ impl fmt::Display for Transform {
                 write!(f, "!Renaming {} -> {}", old_var, new_var)
             }
             Transform::Reorder((old_var, new_var)) => {
-                write!(f, "!Reorder {} -> {}", old_var, new_var)
+                write!(f, "!Reorder {} <-> {}", old_var, new_var)
             }
         }
     }
@@ -243,6 +262,16 @@ mod tests {
         let expected_transform = Transform::MapTemporal("ty".to_string());
         assert_eq!(transform, expected_transform);
 
+        let test_str = "!Reorder y <-> tn";
+        let transform: Transform = Transform::from_str(test_str).unwrap();
+        let expected_transform = Transform::Reorder(("y".to_string(), "tn".to_string()));
+        assert_eq!(transform, expected_transform);
+
+        let test_str = "x <-> y";
+        let transform: Transform = Transform::from_str(test_str).unwrap();
+        let expected_transform = Transform::Reorder(("x".to_string(), "y".to_string()));
+        assert_eq!(transform, expected_transform);
+
         let test_str = r#"
 // tiling n into simd by 4
  - n -> (n, simd) by 4
@@ -255,6 +284,8 @@ mod tests {
  - !MapSpatial simd => Spatial
  - !MapTemporal ty => Temporal
  - !MapTemporal tn => Temporal
+ - !Reorder y <-> tn
+ - x <-> y
         "#;
         let transforms: Transforms = Transforms::from_str(test_str).unwrap();
         let expected_transforms = Transforms {
@@ -269,6 +300,8 @@ mod tests {
                 Transform::MapSpatial("simd".to_string()),
                 Transform::MapTemporal("ty".to_string()),
                 Transform::MapTemporal("tn".to_string()),
+                Transform::Reorder(("y".to_string(), "tn".to_string())),
+                Transform::Reorder(("x".to_string(), "y".to_string())),
             ],
         };
         assert_eq!(transforms, expected_transforms);

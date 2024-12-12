@@ -9,4 +9,5 @@
  - !MapSpatial simd => Spatial
  - !MapTemporal ty => Temporal
  - !MapTemporal tn => Temporal
- 
+ - !Reorder y <-> tn
+ - x <-> y

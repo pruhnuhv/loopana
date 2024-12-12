@@ -373,11 +373,21 @@ impl Transforming for LoopNest {
                 let idx1 = new_iters
                     .iter()
                     .position(|iter| iter.iter_name == *iter1)
-                    .unwrap();
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "The first iterator {} to reorder was not found in the loop nest",
+                            iter1
+                        )
+                    });
                 let idx2 = new_iters
                     .iter()
                     .position(|iter| iter.iter_name == *iter2)
-                    .unwrap();
+                    .unwrap_or_else(|| {
+                        panic!(
+                            "The second iterator {} to reorder was not found in the loop nest",
+                            iter2
+                        )
+                    });
                 new_iters.swap(idx1, idx2);
 
                 LoopNest {
