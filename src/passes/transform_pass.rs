@@ -1,3 +1,5 @@
+use std::iter;
+
 use crate::representations::affine_expr::AffineExpr;
 use crate::representations::affine_expr::Coeff;
 use crate::representations::instruction::*;
@@ -230,35 +232,51 @@ impl Transforming for LoopProperties {
     fn apply(&self, transform: &Transform) -> Self {
         match transform {
             Transform::MapSpatial(iter_to_map) => {
-                let new_mapping = self
-                    .mapping
-                    .iter()
-                    .map(|(iter_name, mapping_type)| {
-                        if iter_name == iter_to_map {
-                            (iter_name.clone(), MappingType::Spatial)
-                        } else {
-                            (iter_name.clone(), mapping_type.clone())
-                        }
-                    })
-                    .collect();
-                LoopProperties {
-                    mapping: new_mapping,
+                if !self.mapping.contains_key(iter_to_map) {
+                    let mut new_mapping = self.mapping.clone();
+                    new_mapping.insert(iter_to_map.clone(), MappingType::Spatial);
+                    LoopProperties {
+                        mapping: new_mapping,
+                    }
+                } else {
+                    let new_mapping = self
+                        .mapping
+                        .iter()
+                        .map(|(iter_name, mapping_type)| {
+                            if iter_name == iter_to_map {
+                                (iter_name.clone(), MappingType::Spatial)
+                            } else {
+                                (iter_name.clone(), mapping_type.clone())
+                            }
+                        })
+                        .collect();
+                    LoopProperties {
+                        mapping: new_mapping,
+                    }
                 }
             }
             Transform::MapTemporal(iter_to_map) => {
-                let new_mapping = self
-                    .mapping
-                    .iter()
-                    .map(|(iter_name, mapping_type)| {
-                        if iter_name == iter_to_map {
-                            (iter_name.clone(), MappingType::Temporal)
-                        } else {
-                            (iter_name.clone(), mapping_type.clone())
-                        }
-                    })
-                    .collect();
-                LoopProperties {
-                    mapping: new_mapping,
+                if !self.mapping.contains_key(iter_to_map) {
+                    let mut new_mapping = self.mapping.clone();
+                    new_mapping.insert(iter_to_map.clone(), MappingType::Temporal);
+                    LoopProperties {
+                        mapping: new_mapping,
+                    }
+                } else {
+                    let new_mapping = self
+                        .mapping
+                        .iter()
+                        .map(|(iter_name, mapping_type)| {
+                            if iter_name == iter_to_map {
+                                (iter_name.clone(), MappingType::Temporal)
+                            } else {
+                                (iter_name.clone(), mapping_type.clone())
+                            }
+                        })
+                        .collect();
+                    LoopProperties {
+                        mapping: new_mapping,
+                    }
                 }
             }
             Transform::Renaming((old_iter, new_iter)) => {
@@ -307,10 +325,7 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = match &self.properties {
-                    Some(properties) => Some(properties.apply(transform)),
-                    None => None,
-                };
+                let new_properties = self.properties.apply(transform);
                 // Add a new loop with the new iterator
                 // The step is the same as the old iterator
                 // The upper bound is the factor
@@ -353,10 +368,7 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = match &self.properties {
-                    Some(properties) => Some(properties.apply(transform)),
-                    None => None,
-                };
+                let new_properties = self.properties.apply(transform);
                 // Reorder the iterators
                 let idx1 = new_iters
                     .iter()
@@ -386,10 +398,7 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = match &self.properties {
-                    Some(properties) => Some(properties.apply(transform)),
-                    None => None,
-                };
+                let new_properties = self.properties.apply(transform);
                 LoopNest {
                     iters: new_iters,
                     body: new_body,

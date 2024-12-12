@@ -17,7 +17,7 @@ use serde_derive::{Deserialize, Serialize};
 pub struct LoopNest {
     pub iters: Vec<LoopIter>,
     pub body: Vec<Instruction>,
-    pub properties: Option<LoopProperties>,
+    pub properties: LoopProperties,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +145,8 @@ body:
   - Rc <= C[m][n] (LE Rcmp)
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
   - Rc1 => C[m][n] (LE Rcmp)
+properties: 
+    mapping: {}
     "#;
         let loop_prob: LoopNest = serde_yaml::from_str(loop_prob_str).unwrap();
         let serialized = serde_yaml::to_string(&loop_prob).unwrap().clone();

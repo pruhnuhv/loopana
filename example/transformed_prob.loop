@@ -12,4 +12,10 @@ body:
 - Rc <= C[ty][y][tn][x][simd] (LE Rcmp)
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
 - Rc1 => C[ty][y][tn][x][simd] (LE Rcmp)
-properties: null
+properties:
+  mapping:
+    tn: Temporal
+    x: Spatial
+    y: Spatial
+    simd: Spatial
+    ty: Temporal

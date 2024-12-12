@@ -18,4 +18,5 @@ body:
   - Rc <= C[m][n] (LE Rcmp)
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
   - Rc1 => C[m][n] (LE Rcmp)
-properties: null
+properties: 
+    mapping: {}
