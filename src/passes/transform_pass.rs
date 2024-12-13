@@ -28,8 +28,6 @@ impl Transforming for Coeff {
             (Coeff::Const(_), _) => self.clone(),
 
             // Coeff::ConstVar
-            (Coeff::ConstVar(_), Transform::MapSpatial(_)) => self.clone(),
-            (Coeff::ConstVar(_), Transform::MapTemporal(_)) => self.clone(),
             (Coeff::ConstVar(var), Transform::Tiling((old, _, _))) => {
                 if var == old {
                     panic!("You are trying to tile the constant variable {} that is used as a coefficient. This is not allowed.", var);
@@ -60,8 +58,6 @@ impl Transforming for AffineExpr {
     fn apply(&self, transform: &Transform) -> Self {
         match (self, transform) {
             // AffineExpr::Var
-            (AffineExpr::Var(_), Transform::MapSpatial(_)) => self.clone(),
-            (AffineExpr::Var(_), Transform::MapTemporal(_)) => self.clone(),
             (AffineExpr::Var(var), Transform::Tiling((old, new, factor))) => {
                 if var == old {
                     AffineExpr::Add(
@@ -191,8 +187,6 @@ impl Transforming for Instruction {
 impl Transforming for LoopIter {
     fn apply(&self, transform: &Transform) -> Self {
         match transform {
-            Transform::MapSpatial(_) => self.clone(),
-            Transform::MapTemporal(_) => self.clone(),
             // Tiling transform applied to the iterator it self is only changing the bound
             // The extra loop (with the new iterator) is created by LoopNest
             Transform::Tiling((old, new, factor)) => {
@@ -230,84 +224,38 @@ impl Transforming for LoopIter {
 
 impl Transforming for LoopProperties {
     fn apply(&self, transform: &Transform) -> Self {
-        match transform {
-            Transform::MapSpatial(iter_to_map) => {
-                if !self.mapping.contains_key(iter_to_map) {
-                    let mut new_mapping = self.mapping.clone();
-                    new_mapping.insert(iter_to_map.clone(), MappingType::Spatial);
-                    LoopProperties {
-                        mapping: new_mapping,
-                    }
-                } else {
-                    let new_mapping = self
-                        .mapping
-                        .iter()
-                        .map(|(iter_name, mapping_type)| {
-                            if iter_name == iter_to_map {
-                                (iter_name.clone(), MappingType::Spatial)
-                            } else {
-                                (iter_name.clone(), mapping_type.clone())
-                            }
-                        })
-                        .collect();
-                    LoopProperties {
-                        mapping: new_mapping,
-                    }
-                }
-            }
-            Transform::MapTemporal(iter_to_map) => {
-                if !self.mapping.contains_key(iter_to_map) {
-                    let mut new_mapping = self.mapping.clone();
-                    new_mapping.insert(iter_to_map.clone(), MappingType::Temporal);
-                    LoopProperties {
-                        mapping: new_mapping,
-                    }
-                } else {
-                    let new_mapping = self
-                        .mapping
-                        .iter()
-                        .map(|(iter_name, mapping_type)| {
-                            if iter_name == iter_to_map {
-                                (iter_name.clone(), MappingType::Temporal)
-                            } else {
-                                (iter_name.clone(), mapping_type.clone())
-                            }
-                        })
-                        .collect();
-                    LoopProperties {
-                        mapping: new_mapping,
-                    }
-                }
-            }
-            Transform::Renaming((old_iter, new_iter)) => {
-                let new_mapping = self
-                    .mapping
-                    .iter()
-                    .map(|(iter_name, mapping_type)| {
-                        if iter_name == old_iter {
-                            (new_iter.clone(), mapping_type.clone())
-                        } else {
-                            (iter_name.clone(), mapping_type.clone())
-                        }
-                    })
-                    .collect();
-                LoopProperties {
-                    mapping: new_mapping,
-                }
-            }
-            Transform::Tiling((old, new, factor)) => {
-                // The old mapping is kept, add a new entry for the new iterator if the old iterator was in the map
-                let found = self.mapping.get(old);
-                let mut new_mapping = self.mapping.clone();
-                if found.is_some() {
-                    new_mapping.insert(new.clone(), MappingType::Spatial);
-                }
-                LoopProperties {
-                    mapping: new_mapping,
-                }
-            }
-            Transform::Reorder((iter1, iter2)) => self.clone(),
-        }
+        // Current Transformations have no effect on LoopProperties
+        return self.clone();
+        // match transform {
+        //     Transform::Renaming((old_iter, new_iter)) => {
+        //         let new_mapping = self
+        //             .cond_prob
+        //             .iter()
+        //             .map(|(iter_name, mapping_type)| {
+        //                 if iter_name == old_iter {
+        //                     (new_iter.clone(), mapping_type.clone())
+        //                 } else {
+        //                     (iter_name.clone(), mapping_type.clone())
+        //                 }
+        //             })
+        //             .collect();
+        //         LoopProperties {
+        //             cond_prob: new_mapping,
+        //         }
+        //     }
+        //     Transform::Tiling((old, new, factor)) => {
+        //         // The old mapping is kept, add a new entry for the new iterator if the old iterator was in the map
+        //         let found = self.cond_prob.get(old);
+        //         let mut new_mapping = self.cond_prob.clone();
+        //         if found.is_some() {
+        //             new_mapping.insert(new.clone(), MappingType::Spatial);
+        //         }
+        //         LoopProperties {
+        //             cond_prob: new_mapping,
+        //         }
+        //     }
+        //     Transform::Reorder((iter1, iter2)) => self.clone(),
+        // }
     }
 }
 
@@ -396,8 +344,8 @@ impl Transforming for LoopNest {
                     properties: new_properties,
                 }
             }
-            // MapSpatial, MapTemporal, Renaming
-            Transform::MapSpatial(_) | Transform::MapTemporal(_) | Transform::Renaming(_) => {
+            // Renaming
+            Transform::Renaming(_) => {
                 let new_iters = self
                     .iters
                     .iter()

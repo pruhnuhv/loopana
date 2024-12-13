@@ -13,9 +13,4 @@ body:
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
 - Rc1 => C[m][tn][x][simd] (LE Rcmp)
 properties:
-  mapping:
-    tn: Temporal
-    ty: Temporal
-    x: Spatial
-    simd: Spatial
-    y: Spatial
+  cond_prob: {}

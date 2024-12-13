@@ -12,14 +12,10 @@ use nom::{
     IResult,
 };
 /// A transform is a way to modify a loop nest. It can be a spatial or temporal mapping, tiling, or renaming.
-/// MapSpatial: Maps a loop to a spatial dimension.
-/// MapTemporal: Maps a loop to a temporal dimension.
 /// Tiling: Tiles a loop with a given factor.
 /// Renaming: Renames a loop iterator.
 #[derive(Debug, PartialEq)]
 pub enum Transform {
-    MapSpatial(String),
-    MapTemporal(String),
     Tiling((String, String, i32)),
     Renaming((String, String)),
     Reorder((String, String)),
@@ -86,25 +82,6 @@ fn parse_renaming(input: &str) -> IResult<&str, Transform> {
     ))
 }
 
-fn parse_mapping(input: &str) -> IResult<&str, Transform> {
-    let prefix = delimited(
-        space0,
-        alt((tag("!MapSpatial"), tag("!MapTemporal"))),
-        space0,
-    );
-    let (input, (_, id, _, mapping_type)) = tuple((
-        opt(prefix),
-        delimited(space0, parse_identifier, space0),
-        delimited(space0, tag("=>"), space0),
-        alt((tag("Spatial"), tag("Temporal"))),
-    ))(input)?;
-    match mapping_type {
-        "Spatial" => Ok((input, Transform::MapSpatial(id.to_string()))),
-        "Temporal" => Ok((input, Transform::MapTemporal(id.to_string()))),
-        _ => unreachable!(),
-    }
-}
-
 fn parse_reorder(input: &str) -> IResult<&str, Transform> {
     let prefix = delimited(space0, tag("!Reorder"), space0);
     let (input, (_, old_var, _, new_var)) = tuple((
@@ -130,12 +107,7 @@ fn ws_and_comments(input: &str) -> IResult<&str, ()> {
 }
 
 fn parse_transform(input: &str) -> IResult<&str, Transform> {
-    cut(alt((
-        parse_tiling,
-        parse_renaming,
-        parse_mapping,
-        parse_reorder,
-    )))(input)
+    cut(alt((parse_tiling, parse_renaming, parse_reorder)))(input)
 }
 
 fn parse_transforms(input: &str) -> IResult<&str, Transforms> {
@@ -193,8 +165,6 @@ impl Transform {
 impl fmt::Display for Transform {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Transform::MapSpatial(id) => write!(f, "!MapSpatial {} => Spatial", id),
-            Transform::MapTemporal(id) => write!(f, "!MapTemporal {} => Temporal", id),
             Transform::Tiling((old_var, new_var, factor)) => {
                 write!(
                     f,
@@ -242,26 +212,6 @@ mod tests {
         let expected_transform = Transform::Renaming(("m".to_string(), "ty".to_string()));
         assert_eq!(transform, expected_transform);
 
-        let test_str = "!MapSpatial x => Spatial";
-        let transform: Transform = Transform::from_str(test_str).unwrap();
-        let expected_transform = Transform::MapSpatial("x".to_string());
-        assert_eq!(transform, expected_transform);
-
-        let test_str = "y => Spatial";
-        let transform: Transform = Transform::from_str(test_str).unwrap();
-        let expected_transform = Transform::MapSpatial("y".to_string());
-        assert_eq!(transform, expected_transform);
-
-        let test_str = "!MapSpatial simd => Spatial";
-        let transform: Transform = Transform::from_str(test_str).unwrap();
-        let expected_transform = Transform::MapSpatial("simd".to_string());
-        assert_eq!(transform, expected_transform);
-
-        let test_str = "!MapTemporal ty => Temporal";
-        let transform: Transform = Transform::from_str(test_str).unwrap();
-        let expected_transform = Transform::MapTemporal("ty".to_string());
-        assert_eq!(transform, expected_transform);
-
         let test_str = "!Reorder y <-> tn";
         let transform: Transform = Transform::from_str(test_str).unwrap();
         let expected_transform = Transform::Reorder(("y".to_string(), "tn".to_string()));
@@ -279,11 +229,6 @@ mod tests {
  - !Tiling m -> (m, y) by 8
  - m -> ty
  - n -> tn
- - !MapSpatial x => Spatial
- - y => Spatial
- - !MapSpatial simd => Spatial
- - !MapTemporal ty => Temporal
- - !MapTemporal tn => Temporal
  - !Reorder y <-> tn
  - x <-> y
         "#;
@@ -295,11 +240,6 @@ mod tests {
                 Transform::Tiling(("m".to_string(), "y".to_string(), 8)),
                 Transform::Renaming(("m".to_string(), "ty".to_string())),
                 Transform::Renaming(("n".to_string(), "tn".to_string())),
-                Transform::MapSpatial("x".to_string()),
-                Transform::MapSpatial("y".to_string()),
-                Transform::MapSpatial("simd".to_string()),
-                Transform::MapTemporal("ty".to_string()),
-                Transform::MapTemporal("tn".to_string()),
                 Transform::Reorder(("y".to_string(), "tn".to_string())),
                 Transform::Reorder(("x".to_string(), "y".to_string())),
             ],

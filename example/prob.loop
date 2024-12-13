@@ -19,4 +19,4 @@ body:
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
   - Rc1 => C[m][n] (LE Rcmp)
 properties: 
-    mapping: {}
+  cond_prob: {}

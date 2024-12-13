@@ -1,14 +1,16 @@
+use super::loops::{LoopIter, LoopNest};
 use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Mapping {
-    pub mapping: HashMap<String, Option<MappingType>>,
+    pub loop_nest: LoopNest,
+    pub mapping: Vec<MappingType>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum MappingType {
-    Spatial,
+    Spatial(String),
     Temporal,
     InterTile,
     IntraTile,
