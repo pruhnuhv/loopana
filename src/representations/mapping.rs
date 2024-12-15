@@ -5,9 +5,9 @@ use nom::{
     bytes::complete::tag,
     character::complete::{alpha1, multispace0, space0},
     combinator::{cut, map},
-    multi::{separated_list0},
+    multi::separated_list0,
     sequence::{delimited, terminated, tuple},
-    IResult, Parser,
+    IResult,
 };
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_derive::{Deserialize, Serialize};
