@@ -1,10 +1,8 @@
-use std::iter;
 
 use crate::representations::affine_expr::AffineExpr;
 use crate::representations::affine_expr::Coeff;
 use crate::representations::instruction::*;
 use crate::representations::loops::*;
-use crate::representations::mapping::MappingType;
 use crate::representations::transforms::{Transform, Transforms};
 
 pub trait Transforming {

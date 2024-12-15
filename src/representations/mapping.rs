@@ -1,11 +1,11 @@
-use super::loops::{LoopIter, LoopNest};
+use super::loops::LoopNest;
 use core::fmt;
 use nom::{
     branch::alt,
     bytes::complete::tag,
     character::complete::{alpha1, multispace0, space0},
     combinator::{cut, map},
-    multi::{self, many0, separated_list0},
+    multi::{separated_list0},
     sequence::{delimited, terminated, tuple},
     IResult, Parser,
 };
