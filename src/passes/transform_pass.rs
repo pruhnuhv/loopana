@@ -1,4 +1,3 @@
-
 use crate::representations::affine_expr::AffineExpr;
 use crate::representations::affine_expr::Coeff;
 use crate::representations::instruction::*;
@@ -187,7 +186,7 @@ impl Transforming for LoopIter {
         match transform {
             // Tiling transform applied to the iterator it self is only changing the bound
             // The extra loop (with the new iterator) is created by LoopNest
-            Transform::Tiling((old, new, factor)) => {
+            Transform::Tiling((old, _, factor)) => {
                 if self.iter_name == *old {
                     if self.bounds.1 % factor != 0 {
                         panic!(
@@ -221,7 +220,7 @@ impl Transforming for LoopIter {
 }
 
 impl Transforming for LoopProperties {
-    fn apply(&self, transform: &Transform) -> Self {
+    fn apply(&self, _: &Transform) -> Self {
         // Current Transformations have no effect on LoopProperties
         return self.clone();
         // match transform {

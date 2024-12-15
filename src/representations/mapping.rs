@@ -158,7 +158,7 @@ Mapping:
             .into_iter()
             .collect(),
         };
-        let mapping: Mapping = Mapping::from_str(input);
+        let _mapping: Mapping = Mapping::from_str(input);
 
         //try serialize -> deserialize
         let serialized = serde_yaml::to_string(&expected_mapping).unwrap();

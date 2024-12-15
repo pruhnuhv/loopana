@@ -126,7 +126,7 @@ mod tests {
         // Construct the file path to loopprob.yaml
         let file_path = Path::new(manifest_dir).join("example/prob.loop");
         let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
-        let loop_prob: LoopNest =
+        let _loop_prob: LoopNest =
             serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
     }
 

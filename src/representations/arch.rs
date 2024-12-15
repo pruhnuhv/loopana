@@ -53,6 +53,6 @@ mod tests {
         // Construct the file path to loopprob.yaml
         let file_path = Path::new(manifest_dir).join("example/mesh_distributed-mem.arch");
         let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
-        let arch: Arch = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
+        let _arch: Arch = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
     }
 }
