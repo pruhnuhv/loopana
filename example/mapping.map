@@ -1,0 +1,7 @@
+Mapping:
+    - m -> InterTile
+    - tk -> IntraTile
+    - tn -> IntraTile
+    - x -> $x
+    - y -> $y
+    - simd -> $simd

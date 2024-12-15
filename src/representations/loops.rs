@@ -1,4 +1,3 @@
-use super::mapping::MappingType;
 use core::fmt;
 use nom::{
     bytes::complete::tag,
