@@ -12,5 +12,3 @@ body:
 - Rc <= C[m][tn][x][simd] (LE Rcmp)
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
 - Rc1 => C[m][tn][x][simd] (LE Rcmp)
-properties:
-  cond_prob: {}

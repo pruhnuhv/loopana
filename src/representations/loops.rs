@@ -16,7 +16,6 @@ use serde_derive::{Deserialize, Serialize};
 pub struct LoopNest {
     pub iters: Vec<LoopIter>,
     pub body: Vec<Instruction>,
-    pub properties: LoopProperties,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -24,11 +23,6 @@ pub struct LoopIter {
     pub iter_name: String,
     pub bounds: (i32, i32),
     pub step: i32,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct LoopProperties {
-    pub cond_prob: HashMap<String, i32>,
 }
 
 fn parse_identifier(input: &str) -> IResult<&str, String> {
@@ -144,8 +138,6 @@ body:
   - Rc <= C[m][n] (LE Rcmp)
   - mac Rc1 Ra, Rb, Rc (LE Rcmp)
   - Rc1 => C[m][n] (LE Rcmp)
-properties: 
-    cond_prob: {}
     "#;
         let loop_prob: LoopNest = serde_yaml::from_str(loop_prob_str).unwrap();
         let serialized = serde_yaml::to_string(&loop_prob).unwrap().clone();

@@ -219,43 +219,6 @@ impl Transforming for LoopIter {
     }
 }
 
-impl Transforming for LoopProperties {
-    fn apply(&self, _: &Transform) -> Self {
-        // Current Transformations have no effect on LoopProperties
-        return self.clone();
-        // match transform {
-        //     Transform::Renaming((old_iter, new_iter)) => {
-        //         let new_mapping = self
-        //             .cond_prob
-        //             .iter()
-        //             .map(|(iter_name, mapping_type)| {
-        //                 if iter_name == old_iter {
-        //                     (new_iter.clone(), mapping_type.clone())
-        //                 } else {
-        //                     (iter_name.clone(), mapping_type.clone())
-        //                 }
-        //             })
-        //             .collect();
-        //         LoopProperties {
-        //             cond_prob: new_mapping,
-        //         }
-        //     }
-        //     Transform::Tiling((old, new, factor)) => {
-        //         // The old mapping is kept, add a new entry for the new iterator if the old iterator was in the map
-        //         let found = self.cond_prob.get(old);
-        //         let mut new_mapping = self.cond_prob.clone();
-        //         if found.is_some() {
-        //             new_mapping.insert(new.clone(), MappingType::Spatial);
-        //         }
-        //         LoopProperties {
-        //             cond_prob: new_mapping,
-        //         }
-        //     }
-        //     Transform::Reorder((iter1, iter2)) => self.clone(),
-        // }
-    }
-}
-
 impl Transforming for LoopNest {
     fn apply(&self, transform: &Transform) -> Self {
         match transform {
@@ -270,7 +233,6 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = self.properties.apply(transform);
                 // Add a new loop with the new iterator
                 // The step is the same as the old iterator
                 // The upper bound is the factor
@@ -298,7 +260,6 @@ impl Transforming for LoopNest {
                 LoopNest {
                     iters: new_iters,
                     body: new_body,
-                    properties: new_properties,
                 }
             }
 
@@ -313,7 +274,6 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = self.properties.apply(transform);
                 // Reorder the iterators
                 let idx1 = new_iters
                     .iter()
@@ -338,7 +298,6 @@ impl Transforming for LoopNest {
                 LoopNest {
                     iters: new_iters,
                     body: new_body,
-                    properties: new_properties,
                 }
             }
             // Renaming
@@ -353,11 +312,9 @@ impl Transforming for LoopNest {
                     .iter()
                     .map(|instr| instr.apply(transform))
                     .collect();
-                let new_properties = self.properties.apply(transform);
                 LoopNest {
                     iters: new_iters,
                     body: new_body,
-                    properties: new_properties,
                 }
             }
         }

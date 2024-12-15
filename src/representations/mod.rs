@@ -5,3 +5,4 @@ pub mod instruction;
 pub mod loops;
 pub mod mapping;
 pub mod transforms;
+pub mod property;
