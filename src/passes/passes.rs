@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::representations::{
     instruction::Instruction,
     loops::{LoopIter, LoopNest},
@@ -164,5 +166,49 @@ impl<'a> Workspace<'a> {
     ) -> Option<&Vec<Box<dyn InstProperty>>> {
         self.find_instruction_index(instruction)
             .and_then(|idx| self.get_inst_properties(idx))
+    }
+}
+
+impl Display for Workspace<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Workspace: \n")?;
+        write!(f, "LoopNest: \n{}\n", self.loop_nest)?;
+        let loop_props: Vec<String> = self
+            .loop_properties
+            .iter()
+            .map(|prop| prop.to_str(self.loop_nest))
+            .collect();
+        write!(f, "LoopProperties: [\n{}\n]", loop_props.join("\n"))?;
+
+        for iter in self.loop_nest.iters.iter() {
+            write!(f, "Iter: {}\n", iter)?;
+            let iter_index = self.find_iter_index(iter).unwrap();
+            let iter_props: Vec<String> = self.iter_properties[iter_index]
+                .iter()
+                .map(|prop| prop.inline_to_str(iter))
+                .collect();
+            write!(
+                f,
+                "IterProperties for {:?}: [\n{}\n]",
+                iter,
+                iter_props.join("\n")
+            )?;
+        }
+
+        for inst in self.loop_nest.body.iter() {
+            write!(f, "Instruction: {}\n", inst)?;
+            let inst_index = self.find_instruction_index(inst).unwrap();
+            let inst_props: Vec<String> = self.inst_properties[inst_index]
+                .iter()
+                .map(|prop| prop.inline_to_str(inst))
+                .collect();
+            write!(
+                f,
+                "InstProperties for {:?}: [\n{}\n]",
+                inst,
+                inst_props.join("\n")
+            )?;
+        }
+        Ok(())
     }
 }

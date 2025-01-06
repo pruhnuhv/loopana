@@ -106,6 +106,13 @@ impl fmt::Display for LoopIter {
     }
 }
 
+impl fmt::Display for LoopNest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let serialized = serde_yaml::to_string(self).unwrap();
+        write!(f, "{}", serialized)
+    }
+}
+
 // TODO move this to integration tests
 #[cfg(test)]
 mod tests {

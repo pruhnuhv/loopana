@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::representations::{
     instruction::Instruction,
     property::{InstProperty, Property},
@@ -20,5 +22,11 @@ impl Property for MemAccessProp {
 impl InstProperty for MemAccessProp {
     fn inline_to_str(&self, _: &Instruction) -> String {
         format!("{:?}", self.mem_access)
+    }
+}
+
+impl fmt::Display for MemAccessProp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{{{}}}", self.mem_access.join(", "))
     }
 }

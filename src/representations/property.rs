@@ -1,9 +1,11 @@
+use core::fmt;
+
 use crate::representations::instruction::Instruction;
 use crate::representations::loops::LoopNest;
 
 use super::loops::LoopIter;
 
-pub trait Property {
+pub trait Property: fmt::Display {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
 }
