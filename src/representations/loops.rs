@@ -6,7 +6,6 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
-use std::collections::HashMap;
 
 use super::instruction::Instruction;
 use serde::{Deserialize, Deserializer, Serialize};
