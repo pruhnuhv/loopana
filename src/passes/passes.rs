@@ -1,27 +1,34 @@
-use std::fmt::Display;
+use std::fmt::{write, Display};
 
 use crate::representations::{
     instruction::Instruction,
     loops::{LoopIter, LoopNest},
     property::*,
 };
+
 pub struct Workspace<'a> {
     pub iter_properties: Vec<Vec<Box<dyn IterProperty>>>,
     pub inst_properties: Vec<Vec<Box<dyn InstProperty>>>,
     pub loop_properties: Vec<Box<dyn LoopProperty>>,
     pub loop_nest: &'a LoopNest,
 }
-pub trait Pass {
+pub trait PassInfo {
     fn name(&self) -> &str;
     fn description(&self) -> &str;
-    fn required_properties(&self) -> Vec<Box<dyn Property>>;
-    fn produced_properties(&self) -> Vec<Box<dyn Property>>;
-    fn run(&self, workspace: &mut Workspace);
+    fn required_properties(&self) -> Vec<String>;
+    fn produced_properties(&self) -> Vec<String>;
 }
 
-pub trait InstAnalysis: Pass {
+pub trait PassRun {
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str>;
+}
+
+pub trait Pass: PassInfo + PassRun {}
+impl<T> Pass for T where T: PassInfo + PassRun {}
+
+pub trait InstAnalysis {
     fn analyze_inst(&self, inst: &Instruction) -> Vec<Box<dyn InstProperty>>;
-    fn analyze(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
         for inst in workspace.loop_nest.body.iter() {
             let properties = self.analyze_inst(inst);
             for property in properties {
@@ -32,9 +39,9 @@ pub trait InstAnalysis: Pass {
     }
 }
 
-pub trait IterAnalysis: Pass {
+pub trait IterAnalysis {
     fn analyze_iter(&self, iter: &LoopIter) -> Vec<Box<dyn IterProperty>>;
-    fn analyze(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
         for iter in workspace.loop_nest.iters.iter() {
             let properties = self.analyze_iter(iter);
             for property in properties {
@@ -45,9 +52,9 @@ pub trait IterAnalysis: Pass {
     }
 }
 
-pub trait LoopAnalysis: Pass {
+pub trait LoopAnalysis {
     fn analyze_loop(&self, loop_nest: &LoopNest) -> Vec<Box<dyn LoopProperty>>;
-    fn analyze(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
         let properties = self.analyze_loop(workspace.loop_nest);
         for property in properties {
             workspace.add_loop_property(property);
@@ -56,15 +63,15 @@ pub trait LoopAnalysis: Pass {
     }
 }
 
-pub trait InstTransform: Pass {
+pub trait InstTransform {
     fn transform_inst(&self, inst: &Instruction) -> Instruction;
 }
 
-pub trait IterTransform: Pass {
+pub trait IterTransform {
     fn transform_iter(&self, iter: &LoopIter) -> LoopIter;
 }
 
-pub trait LoopTransform: Pass {
+pub trait LoopTransform {
     fn transform_loop(&self, loop_nest: &LoopNest) -> LoopNest;
 }
 
@@ -171,44 +178,39 @@ impl<'a> Workspace<'a> {
 
 impl Display for Workspace<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Workspace: \n")?;
-        write!(f, "LoopNest: \n{}\n", self.loop_nest)?;
+        write!(f, "Problem: \n{}\n", self.loop_nest)?;
         let loop_props: Vec<String> = self
             .loop_properties
             .iter()
             .map(|prop| prop.to_str(self.loop_nest))
             .collect();
-        write!(f, "LoopProperties: [\n{}\n]", loop_props.join("\n"))?;
+        write!(f, "LoopProperties: \n{}", loop_props.join("\n"))?;
+        write!(f, "\n\n")?;
 
+        write!(f, "IterProperties:\n")?;
         for iter in self.loop_nest.iters.iter() {
-            write!(f, "Iter: {}\n", iter)?;
+            write!(f, "{}\n", iter)?;
             let iter_index = self.find_iter_index(iter).unwrap();
             let iter_props: Vec<String> = self.iter_properties[iter_index]
                 .iter()
                 .map(|prop| prop.inline_to_str(iter))
                 .collect();
-            write!(
-                f,
-                "IterProperties for {:?}: [\n{}\n]",
-                iter,
-                iter_props.join("\n")
-            )?;
+            write!(f, "\t{}\n", iter_props.join("\n"))?;
         }
+        write!(f, "\n\n")?;
 
+        write!(f, "InstProperties:\n")?;
         for inst in self.loop_nest.body.iter() {
-            write!(f, "Instruction: {}\n", inst)?;
+            write!(f, "{}\n", inst)?;
             let inst_index = self.find_instruction_index(inst).unwrap();
             let inst_props: Vec<String> = self.inst_properties[inst_index]
                 .iter()
                 .map(|prop| prop.inline_to_str(inst))
                 .collect();
-            write!(
-                f,
-                "InstProperties for {:?}: [\n{}\n]",
-                inst,
-                inst_props.join("\n")
-            )?;
+            write!(f, "\t{}\n\n", inst_props.join("\t\n"))?;
         }
+        write!(f, "\n\n")?;
+
         Ok(())
     }
 }
