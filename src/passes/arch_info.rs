@@ -1,6 +1,7 @@
 use core::fmt;
 
 use super::passes::*;
+use super::workspace::Workspace;
 use crate::representations::arch::Arch;
 
 use crate::passes::property::*;
@@ -55,11 +56,11 @@ impl PassInfo for ArchInfoBuilder {
         "Builds the architecture information"
     }
 
-    fn required_properties(&self) -> Vec<String> {
+    fn required_features(&self) -> Vec<String> {
         vec![]
     }
 
-    fn produced_properties(&self) -> Vec<String> {
+    fn produced_features(&self) -> Vec<String> {
         vec!["ArchInfo".to_string()]
     }
 }

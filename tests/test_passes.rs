@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use loopana::{
     passes::{
-        mem_access_analysis::MemAccessAnalysis, pass_pipeline::PassPipeline, passes::Workspace,
+        mem_access_analysis::MemAccessAnalysis, pass_pipeline::PassPipeline, workspace::Workspace,
     },
     representations::loops::LoopNest,
 };

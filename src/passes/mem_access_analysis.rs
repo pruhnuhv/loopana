@@ -5,7 +5,8 @@ use crate::representations::{affine_expr::AffineExpr, instruction::Instruction};
 
 use super::property::{InstProperty, Property};
 
-use super::passes::{InstAnalysis, PassInfo, PassRun, Workspace};
+use super::passes::{InstAnalysis, PassInfo, PassRun};
+use super::workspace::Workspace;
 
 pub struct MemAccessProp {
     pub accessed_dims: Vec<String>,
@@ -109,11 +110,11 @@ impl PassInfo for MemAccessAnalysis {
         "Memory Access Analysis"
     }
 
-    fn required_properties(&self) -> Vec<String> {
+    fn required_features(&self) -> Vec<String> {
         vec!["Architecture".to_string()]
     }
 
-    fn produced_properties(&self) -> Vec<String> {
+    fn produced_features(&self) -> Vec<String> {
         vec!["MemAccess".to_string()]
     }
 }

@@ -5,7 +5,7 @@ use crate::representations::loops::LoopNest;
 
 use crate::representations::loops::LoopIter;
 
-use super::passes::Workspace;
+use super::workspace::Workspace;
 
 pub trait Property: fmt::Display {
     fn name(&self) -> &str;
