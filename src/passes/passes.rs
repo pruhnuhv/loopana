@@ -1,16 +1,20 @@
 use std::fmt::{write, Display};
 
 use crate::representations::{
+    arch::Arch,
     instruction::Instruction,
     loops::{LoopIter, LoopNest},
-    property::*,
 };
+
+use super::property::{InstProperty, IterProperty, LoopProperty, WorkspaceProperty};
 
 pub struct Workspace<'a> {
     pub iter_properties: Vec<Vec<Box<dyn IterProperty>>>,
     pub inst_properties: Vec<Vec<Box<dyn InstProperty>>>,
     pub loop_properties: Vec<Box<dyn LoopProperty>>,
+    pub workspace_properties: Vec<Box<dyn WorkspaceProperty>>,
     pub loop_nest: &'a LoopNest,
+    pub arch: &'a Option<Arch>,
 }
 pub trait PassInfo {
     fn name(&self) -> &str;
@@ -63,6 +67,17 @@ pub trait LoopAnalysis {
     }
 }
 
+pub trait WorkspaceAnalysis {
+    fn analyze_workspace(&self, workspace: &mut Workspace) -> Vec<Box<dyn LoopProperty>>;
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+        let properties = self.analyze_workspace(workspace);
+        for property in properties {
+            workspace.add_loop_property(property);
+        }
+        Ok(())
+    }
+}
+
 pub trait InstTransform {
     fn transform_inst(&self, inst: &Instruction) -> Instruction;
 }
@@ -76,14 +91,16 @@ pub trait LoopTransform {
 }
 
 impl<'a> Workspace<'a> {
-    pub fn new(loop_nest: &'a LoopNest) -> Self {
+    pub fn new(loop_nest: &'a LoopNest, arch: &'a Option<Arch>) -> Self {
         let num_iter = loop_nest.iters.len();
         let num_inst = loop_nest.body.len();
         Workspace {
             iter_properties: (0..num_iter).map(|_| Vec::new()).collect(),
             inst_properties: (0..num_inst).map(|_| Vec::new()).collect(),
             loop_properties: Vec::new(),
+            workspace_properties: Vec::new(),
             loop_nest,
+            arch,
         }
     }
 
@@ -104,6 +121,10 @@ impl<'a> Workspace<'a> {
     /// Add loop property
     pub fn add_loop_property(&mut self, property: Box<dyn LoopProperty>) {
         self.loop_properties.push(property);
+    }
+
+    pub fn add_workspace_property(&mut self, property: Box<dyn WorkspaceProperty>) {
+        self.workspace_properties.push(property);
     }
 
     // Get iterator properties for given index
@@ -173,6 +194,12 @@ impl<'a> Workspace<'a> {
     ) -> Option<&Vec<Box<dyn InstProperty>>> {
         self.find_instruction_index(instruction)
             .and_then(|idx| self.get_inst_properties(idx))
+    }
+
+    pub fn has_property(&self, property_name: String) -> bool {
+        self.loop_properties
+            .iter()
+            .any(|p| p.name() == property_name)
     }
 }
 

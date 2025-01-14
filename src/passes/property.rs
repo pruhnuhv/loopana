@@ -3,7 +3,9 @@ use core::fmt;
 use crate::representations::instruction::Instruction;
 use crate::representations::loops::LoopNest;
 
-use super::loops::LoopIter;
+use crate::representations::loops::LoopIter;
+
+use super::passes::Workspace;
 
 pub trait Property: fmt::Display {
     fn name(&self) -> &str;
@@ -20,4 +22,8 @@ pub trait IterProperty: Property {
 
 pub trait LoopProperty: Property {
     fn to_str(&self, loop_nest: &LoopNest) -> String;
+}
+
+pub trait WorkspaceProperty: Property {
+    fn to_str(&self, workspace: &Workspace) -> String;
 }

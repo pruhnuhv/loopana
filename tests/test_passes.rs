@@ -16,7 +16,7 @@ fn test_passes() {
     let yaml_str = fs::read_to_string(file_path).expect("Failed to read YAML file");
     let loop_nest: LoopNest = serde_yaml::from_str(&yaml_str).expect("Failed to deserialize YAML");
 
-    let mut workspace = Workspace::new(&loop_nest);
+    let mut workspace = Workspace::new(&loop_nest, &None);
     let mut pass_pipeline = PassPipeline::new();
     let mem_access_pass = MemAccessAnalysis;
     pass_pipeline.register_pass(Box::new(mem_access_pass));

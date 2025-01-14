@@ -1,11 +1,9 @@
 use core::fmt;
 use pass_derive::InstPass;
 
-use crate::representations::{
-    affine_expr::AffineExpr,
-    instruction::Instruction,
-    property::{InstProperty, Property},
-};
+use crate::representations::{affine_expr::AffineExpr, instruction::Instruction};
+
+use super::property::{InstProperty, Property};
 
 use super::passes::{InstAnalysis, PassInfo, PassRun, Workspace};
 

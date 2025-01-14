@@ -1,32 +1,32 @@
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Arch {
     pub dims_name: Vec<String>,
     pub dims_shape: Vec<i32>,
     pub pe_arch: PEArch,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct PEArch {
     pub data_ports: Vec<DataPort>,
     pub data_width: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub enum DataPort {
     NocPort(NocPort),
     MemoryWritePort(MemoryPort),
     MemoryReadPort(MemoryPort),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct NocPort {
     pub name: String,
     pub topology: Vec<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct MemoryPort {
     pub name: String,
     pub mem_name: String,
