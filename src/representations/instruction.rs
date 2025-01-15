@@ -1,3 +1,5 @@
+use crate::passes::property::PropertyHook;
+
 use super::affine_expr::{self, AffineExpr};
 use nom::{
     branch::alt,
@@ -10,10 +12,11 @@ use nom::{
     sequence::{delimited, pair, preceded, terminated, tuple},
     IResult,
 };
+use property_hood_id_derive::PropertyHook;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PropertyHook)]
 pub enum Instruction {
     DataLoad(DataAccess),
     DataStore(DataAccess),
@@ -372,6 +375,12 @@ impl Serialize for Instruction {
     }
 }
 
+// impl PropertyHook for Instruction {
+//     fn property_hook_id(&self) -> String {
+//         format!("Instruction: {}", self.to_string())
+//     }
+// }
+
 // from_str of the simple structs
 impl ConditionSuffix {
     fn from_str(s: &str) -> ConditionSuffix {
@@ -400,8 +409,6 @@ impl Operand {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    
 
     #[test]
     fn test_parse_instruction() {

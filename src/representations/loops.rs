@@ -1,3 +1,4 @@
+use crate::passes::property::PropertyHook;
 use core::fmt;
 use nom::{
     bytes::complete::tag,
@@ -6,6 +7,7 @@ use nom::{
     sequence::{delimited, preceded, terminated, tuple},
     IResult,
 };
+use property_hood_id_derive::PropertyHook;
 
 use super::instruction::Instruction;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -17,7 +19,7 @@ pub struct LoopNest {
     pub body: Vec<Instruction>,
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, PropertyHook)]
 pub struct LoopIter {
     pub iter_name: String,
     pub bounds: (i32, i32),

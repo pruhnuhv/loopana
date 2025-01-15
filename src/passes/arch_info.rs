@@ -5,33 +5,18 @@ use super::workspace::Workspace;
 use crate::representations::arch::Arch;
 
 use crate::passes::property::*;
-use crate::representations::loops::LoopNest;
 
 #[derive(Clone)]
 pub struct ArchInfo {
     pub arch: Arch,
 }
 
-impl Property for ArchInfo {
-    fn name(&self) -> &str {
-        "ArchInfo"
-    }
-
-    fn description(&self) -> &str {
-        "Information about the architecture"
-    }
-}
+impl Property for ArchInfo {}
 
 impl fmt::Display for ArchInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let arch_str = serde_yaml::to_string(&self.arch).unwrap();
         write!(f, "{}", arch_str)
-    }
-}
-
-impl LoopProperty for ArchInfo {
-    fn to_str(&self, loop_nest: &LoopNest) -> String {
-        format!("Arch: {}", self)
     }
 }
 
@@ -67,7 +52,7 @@ impl PassInfo for ArchInfoBuilder {
 
 impl PassRun for ArchInfoBuilder {
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        workspace.add_loop_property(Box::new(self.arch_info.clone()));
+        workspace.add_global_property(Box::new(self.arch_info.clone()));
         Ok(())
     }
 }

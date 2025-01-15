@@ -1,39 +1,23 @@
 use core::fmt;
-use pass_derive::InstPass;
 
 use crate::representations::{affine_expr::AffineExpr, instruction::Instruction};
 
-use super::property::{InstProperty, Property};
+use super::property::Property;
 
-use super::passes::{InstAnalysis, PassInfo, PassRun};
+use super::passes::{InstPass, PassInfo, PassRun};
 use super::workspace::Workspace;
 
 pub struct MemAccessProp {
     pub accessed_dims: Vec<String>,
 }
 
-impl Property for MemAccessProp {
-    fn name(&self) -> &str {
-        "MemAccess"
-    }
-
-    fn description(&self) -> &str {
-        "Determining the dimensions of memeory accesses"
-    }
-}
-
-impl InstProperty for MemAccessProp {
-    fn inline_to_str(&self, _: &Instruction) -> String {
-        format!("Used dimensions: {:?}", self.accessed_dims)
-    }
-}
+impl Property for MemAccessProp {}
 
 impl fmt::Display for MemAccessProp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{{{}}}", self.accessed_dims.join(", "))
     }
 }
-#[derive(InstPass)]
 pub struct MemAccessAnalysis;
 
 impl MemAccessAnalysis {
@@ -62,8 +46,8 @@ impl MemAccessAnalysis {
     }
 }
 
-impl InstAnalysis for MemAccessAnalysis {
-    fn analyze_inst(&self, inst: &Instruction) -> Vec<Box<dyn InstProperty>> {
+impl InstPass for MemAccessAnalysis {
+    fn pass_inst(&self, inst: &Instruction) -> Vec<Box<dyn Property>> {
         match inst {
             Instruction::DataLoad(mem_access) => {
                 let accessed_dims = mem_access
@@ -85,19 +69,12 @@ impl InstAnalysis for MemAccessAnalysis {
                 vec![]
             }
         }
-        // let mut mem_access = Vec::new();
-        // for port in inst.pe.arch.data_ports.iter() {
-        //     match port {
-        //         DataPort::MemoryReadPort(mem_port) => {
-        //             mem_access.push(mem_port.mem_name.clone());
-        //         }
-        //         DataPort::MemoryWritePort(mem_port) => {
-        //             mem_access.push(mem_port.mem_name.clone());
-        //         }
-        //         _ => {}
-        //     }
-        // }
-        // vec![Box::new(MemAccessProp { mem_access })]
+    }
+}
+
+impl PassRun for MemAccessAnalysis {
+    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+        <Self as InstPass>::run(self, workspace)
     }
 }
 

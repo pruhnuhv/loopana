@@ -1,16 +1,9 @@
-use std::fmt::{write, Display};
-
 use crate::representations::{
-    arch::Arch,
     instruction::Instruction,
     loops::{LoopIter, LoopNest},
 };
 
-use super::{
-    feature::Feature,
-    property::{InstProperty, IterProperty, LoopProperty, WorkspaceProperty},
-    workspace::Workspace,
-};
+use super::{property::Property, workspace::Workspace};
 
 pub trait PassInfo {
     fn name(&self) -> &str;
@@ -26,49 +19,49 @@ pub trait PassRun {
 pub trait Pass: PassInfo + PassRun {}
 impl<T> Pass for T where T: PassInfo + PassRun {}
 
-pub trait InstAnalysis {
-    fn analyze_inst(&self, inst: &Instruction) -> Vec<Box<dyn InstProperty>>;
+pub trait InstPass: PassRun {
+    fn pass_inst(&self, inst: &Instruction) -> Vec<Box<dyn Property>>;
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        for inst in workspace.loop_nest.body.iter() {
-            let properties = self.analyze_inst(inst);
+        for inst in workspace.loop_nest.body.clone().iter() {
+            let properties = self.pass_inst(inst);
             for property in properties {
-                workspace.add_inst_property_for(inst, property)?;
+                workspace.add_property(inst, property);
             }
         }
         Ok(())
     }
 }
 
-pub trait IterAnalysis {
-    fn analyze_iter(&self, iter: &LoopIter) -> Vec<Box<dyn IterProperty>>;
+pub trait IterPass: PassRun {
+    fn pass_iter(&self, iter: &LoopIter) -> Vec<Box<dyn Property>>;
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        for iter in workspace.loop_nest.iters.iter() {
-            let properties = self.analyze_iter(iter);
+        for iter in workspace.loop_nest.iters.clone().iter() {
+            let properties = self.pass_iter(iter);
             for property in properties {
-                workspace.add_iter_property_for(iter, property)?;
+                workspace.add_property(iter, property);
             }
         }
         Ok(())
     }
 }
 
-pub trait LoopAnalysis {
-    fn analyze_loop(&self, loop_nest: &LoopNest) -> Vec<Box<dyn LoopProperty>>;
-    fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        let properties = self.analyze_loop(workspace.loop_nest);
-        for property in properties {
-            workspace.add_loop_property(property);
-        }
-        Ok(())
-    }
-}
+// pub trait LoopAnalysis {
+//     fn analyze_loop(&self, loop_nest: &LoopNest) -> Vec<Box<dyn Property>>;
+//     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
+//         let properties = self.analyze_loop(workspace.loop_nest);
+//         for property in properties {
+//             workspace.add_property(loop_nest, property);
+//         }
+//         Ok(())
+//     }
+// }
 
-pub trait WorkspaceAnalysis {
-    fn analyze_workspace(&self, workspace: &mut Workspace) -> Vec<Box<dyn LoopProperty>>;
+pub trait WorkspacePass {
+    fn pass_workspace(&self, workspace: &mut Workspace) -> Vec<Box<dyn Property>>;
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        let properties = self.analyze_workspace(workspace);
+        let properties = self.pass_workspace(workspace);
         for property in properties {
-            workspace.add_loop_property(property);
+            workspace.add_global_property(property);
         }
         Ok(())
     }
