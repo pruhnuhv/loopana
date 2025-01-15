@@ -6,10 +6,10 @@ use crate::representations::loops::LoopNest;
 use crate::representations::{arch::Arch, loops::LoopIter};
 
 use super::feature::Feature;
-use super::property::{Property, PropertyHook};
+use super::property::{Property, PropertyHook, PropertyManager};
 
 pub struct Workspace {
-    pub properties: HashMap<String, Vec<Box<dyn Property>>>,
+    pub properties: PropertyManager,
     pub loop_nest: LoopNest,
     pub arch: Option<Arch>,
     pub available_features: Vec<Feature>,
@@ -17,8 +17,15 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(loop_nest: LoopNest, arch: Option<Arch>) -> Self {
+        let property_manager = PropertyManager::from_entries(
+            loop_nest
+                .body
+                .iter()
+                .map(|inst| inst.property_hook_id().clone())
+                .collect(),
+        );
         Workspace {
-            properties: HashMap::new(),
+            properties: property_manager,
             loop_nest,
             arch,
             available_features: Vec::new(),
@@ -26,25 +33,20 @@ impl Workspace {
     }
 
     pub fn add_property(&mut self, property_hook: impl PropertyHook, property: Box<dyn Property>) {
-        let property_hook_id = property_hook.property_hook_id();
         self.properties
-            .entry(property_hook_id)
-            .or_insert(Vec::new())
-            .push(property);
+            .add_property_to_hook(property_hook, property);
     }
 
     pub fn add_global_property(&mut self, property: Box<dyn Property>) {
         self.properties
-            .entry(self.property_hook_id())
-            .or_insert(Vec::new())
-            .push(property);
+            .add_property_by_id(self.property_hook_id(), property);
     }
 
     pub fn get_properties(
         &self,
         property_hook: impl PropertyHook,
     ) -> Option<&Vec<Box<dyn Property>>> {
-        self.properties.get(&property_hook.property_hook_id())
+        self.properties.get_properties_by_hook(property_hook)
     }
 
     // Find LoopIter index in LoopNest
