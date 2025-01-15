@@ -1,9 +1,7 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 
-use crate::representations::instruction::Instruction;
+use crate::representations::arch::Arch;
 use crate::representations::loops::LoopNest;
-use crate::representations::{arch::Arch, loops::LoopIter};
 
 use super::feature::Feature;
 use super::property::{Property, PropertyHook, PropertyManager};
@@ -49,21 +47,21 @@ impl Workspace {
         self.properties.get_properties_by_hook(property_hook)
     }
 
-    // Find LoopIter index in LoopNest
-    fn find_iter_index(&self, iter: &LoopIter) -> Option<usize> {
-        self.loop_nest
-            .iters
-            .iter()
-            .position(|x| std::ptr::eq(x, iter))
-    }
+    // // Find LoopIter index in LoopNest
+    // fn find_iter_index(&self, iter: &LoopIter) -> Option<usize> {
+    //     self.loop_nest
+    //         .iters
+    //         .iter()
+    //         .position(|x| std::ptr::eq(x, iter))
+    // }
 
-    // Find Instruction index in LoopNest
-    fn find_instruction_index(&self, instruction: &Instruction) -> Option<usize> {
-        self.loop_nest
-            .body
-            .iter()
-            .position(|x| std::ptr::eq(x, instruction))
-    }
+    // // Find Instruction index in LoopNest
+    // fn find_instruction_index(&self, instruction: &Instruction) -> Option<usize> {
+    //     self.loop_nest
+    //         .body
+    //         .iter()
+    //         .position(|x| std::ptr::eq(x, instruction))
+    // }
 
     pub fn feature_available(&self, feature: &Feature) -> bool {
         self.available_features.contains(feature)
