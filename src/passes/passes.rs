@@ -1,7 +1,4 @@
-use crate::representations::{
-    instruction::Instruction,
-    loops::{LoopIter, LoopNest},
-};
+use crate::representations::{instruction::Instruction, loops::LoopIter};
 
 use super::{property::Property, workspace::Workspace};
 
@@ -56,7 +53,7 @@ pub trait IterPass: PassRun {
 //     }
 // }
 
-pub trait WorkspacePass {
+pub trait WorkspacePass: PassRun {
     fn pass_workspace(&self, workspace: &mut Workspace) -> Vec<Box<dyn Property>>;
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
         let properties = self.pass_workspace(workspace);
@@ -67,14 +64,14 @@ pub trait WorkspacePass {
     }
 }
 
-pub trait InstTransform {
-    fn transform_inst(&self, inst: &Instruction) -> Instruction;
-}
+// pub trait InstTransform {
+//     fn transform_inst(&self, inst: &Instruction) -> Instruction;
+// }
 
-pub trait IterTransform {
-    fn transform_iter(&self, iter: &LoopIter) -> LoopIter;
-}
+// pub trait IterTransform {
+//     fn transform_iter(&self, iter: &LoopIter) -> LoopIter;
+// }
 
-pub trait LoopTransform {
-    fn transform_loop(&self, loop_nest: &LoopNest) -> LoopNest;
-}
+// pub trait LoopTransform {
+//     fn transform_loop(&self, loop_nest: &LoopNest) -> LoopNest;
+// }

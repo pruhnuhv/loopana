@@ -88,7 +88,7 @@ impl PassInfo for MemAccessAnalysis {
     }
 
     fn required_features(&self) -> Vec<String> {
-        vec!["Architecture".to_string()]
+        vec![]
     }
 
     fn produced_features(&self) -> Vec<String> {

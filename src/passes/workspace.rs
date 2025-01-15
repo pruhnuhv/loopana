@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::rc::Rc;
 
 use crate::representations::instruction::Instruction;
 use crate::representations::loops::LoopNest;
