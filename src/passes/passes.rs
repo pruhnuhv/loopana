@@ -10,6 +10,7 @@ pub trait PassInfo {
 }
 
 pub trait PassRun {
+    fn setup(&mut self, workspace: &mut Workspace) -> Result<(), &'static str>;
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str>;
 }
 

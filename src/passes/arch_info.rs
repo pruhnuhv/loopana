@@ -55,4 +55,8 @@ impl PassRun for ArchInfoBuilder {
         workspace.add_global_property(Box::new(self.arch_info.clone()));
         Ok(())
     }
+
+    fn setup(&mut self, _workspace: &mut Workspace) -> Result<(), &'static str> {
+        Ok(())
+    }
 }

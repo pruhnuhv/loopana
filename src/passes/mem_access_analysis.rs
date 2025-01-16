@@ -78,6 +78,10 @@ impl PassRun for MemAccessAnalysis {
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
         <Self as InstPass>::run(self, workspace)
     }
+
+    fn setup(&mut self, _workspace: &mut Workspace) -> Result<(), &'static str> {
+        Ok(())
+    }
 }
 
 impl PassInfo for MemAccessAnalysis {

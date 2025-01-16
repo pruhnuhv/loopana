@@ -15,7 +15,11 @@ impl PassPipeline {
         self.passes.push(pass);
     }
 
-    pub fn run(&self, workspace: &mut Workspace) -> Result<(), String> {
+    pub fn run(&mut self, workspace: &mut Workspace) -> Result<(), String> {
+        for pass in self.passes.iter_mut() {
+            pass.setup(workspace)?;
+        }
+
         for pass in self.passes.iter() {
             // checking if the required properties are present
             for required_feature in pass.required_features() {
