@@ -76,11 +76,7 @@ impl Workspace {
 
 impl Display for Workspace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Problem: \n{}\n", self.loop_nest)?;
-        if let Some(arch) = &self.arch {
-            write!(f, "Arch: \n{}\n", arch)?;
-        }
-        write!(f, "\nIters: \n")?;
+        write!(f, "Iters: \n")?;
         for iter in &self.loop_nest.iters {
             write!(f, "\n - {}\n", iter)?;
             let properties = self.properties.get_properties_by_hook(iter);
@@ -103,6 +99,9 @@ impl Display for Workspace {
             } else {
                 write!(f, "\t>\n")?;
             }
+        }
+        if let Some(arch) = &self.arch {
+            write!(f, "Arch: \n{}\n", arch)?;
         }
         Ok(())
     }
