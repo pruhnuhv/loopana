@@ -1,5 +1,3 @@
-dims_name: ["x", "y", "SIMD"]
-dims_shape: [8, 8, 4]
 pe_arch:
   data_ports:
     - !NocPort
@@ -18,3 +16,11 @@ pe_arch:
       name: "RP1"
       mem_name: "DMem"
   data_width: 4
+
+dimensions:
+  - name: "x"
+    shape: 8
+  - name: "y"
+    shape: 8
+  - name: "SIMD"
+    shape: 4

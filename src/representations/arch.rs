@@ -1,10 +1,17 @@
+use std::fmt::Display;
+
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+pub struct Dimension {
+    pub name: String,
+    pub shape: i32,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct Arch {
-    pub dims_name: Vec<String>,
-    pub dims_shape: Vec<i32>,
     pub pe_arch: PEArch,
+    pub dimensions: Vec<Dimension>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -38,6 +45,19 @@ pub enum ControlType {
 }
 pub struct Control {
     pub ctrl_type: ControlType,
+}
+
+impl Display for Arch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Arch: \n{}\n", serde_yaml::to_string(self).unwrap())?;
+        Ok(())
+    }
+}
+
+impl Arch {
+    pub fn data_ports(&self) -> &Vec<DataPort> {
+        &self.pe_arch.data_ports
+    }
 }
 
 #[cfg(test)]

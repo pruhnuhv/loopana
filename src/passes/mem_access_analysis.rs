@@ -15,7 +15,7 @@ impl Property for MemAccessProp {}
 
 impl fmt::Display for MemAccessProp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{{{}}}", self.accessed_dims.join(", "))
+        write!(f, "Accessed Dims: {{{}}}", self.accessed_dims.join(", "))
     }
 }
 pub struct MemAccessAnalysis;
@@ -66,7 +66,9 @@ impl InstPass for MemAccessAnalysis {
                 vec![Box::new(MemAccessProp { accessed_dims })]
             }
             _ => {
-                vec![]
+                vec![Box::new(MemAccessProp {
+                    accessed_dims: vec![],
+                })]
             }
         }
     }

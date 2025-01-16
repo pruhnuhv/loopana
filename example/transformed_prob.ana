@@ -14,3 +14,44 @@ body:
 - mac Rc1 Ra, Rb, Rc (LE Rcmp)
 - Rc1 => C[m][tn][x][simd] (LE Rcmp)
 
+
+Iters: 
+
+ - for m in (0..128)
+	>
+
+ - for tk in (0..32)
+	>
+
+ - for tn in (0..16)
+	>
+
+ - for x in (0..8)
+	>
+
+ - for y in (0..8)
+	>
+
+ - for simd in (0..4)
+	>
+
+Body: 
+
+ - Ra <= A[m][tk][y]
+	> Accessed Dims: {m, tk, y}
+ 
+ - cmp Rcmp Ra, $0
+	> Accessed Dims: {}
+ 
+ - Rb <= B[tk][y][tn][x][simd] (LE Rcmp)
+	> Accessed Dims: {tk, y, tn, x, simd}
+ 
+ - Rc <= C[m][tn][x][simd] (LE Rcmp)
+	> Accessed Dims: {m, tn, x, simd}
+ 
+ - mac Rc1 Ra, Rb, Rc (LE Rcmp)
+	> Accessed Dims: {}
+ 
+ - Rc1 => C[m][tn][x][simd] (LE Rcmp)
+	> Accessed Dims: {m, tn, x, simd}
+ 
