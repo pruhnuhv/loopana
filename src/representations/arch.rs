@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use crate::passes::property::PropertyHook;
+use property_hood_id_derive::PropertyHook;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
@@ -8,13 +10,13 @@ pub struct Dimension {
     pub shape: i32,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, PropertyHook)]
 pub struct Arch {
     pub pe_arch: PEArch,
     pub dimensions: Vec<Dimension>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, PropertyHook)]
 pub struct PEArch {
     pub data_ports: Vec<DataPort>,
     pub data_width: i32,
@@ -50,6 +52,13 @@ pub struct Control {
 impl Display for Arch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Arch: \n{}\n", serde_yaml::to_string(self).unwrap())?;
+        Ok(())
+    }
+}
+
+impl Display for PEArch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "PEArch: \n{}\n", serde_yaml::to_string(self).unwrap())?;
         Ok(())
     }
 }
