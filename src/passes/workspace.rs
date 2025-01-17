@@ -47,6 +47,17 @@ impl Workspace {
         self.properties.get_properties_by_hook(property_hook)
     }
 
+    pub fn get_property(
+        &self,
+        property_hook: impl PropertyHook,
+        property_id: &str,
+    ) -> Option<&Box<dyn Property>> {
+        let properties = self.get_properties(property_hook)?;
+        properties
+            .iter()
+            .find(|property| property.property_id() == property_id)
+    }
+
     // // Find LoopIter index in LoopNest
     // fn find_iter_index(&self, iter: &LoopIter) -> Option<usize> {
     //     self.loop_nest

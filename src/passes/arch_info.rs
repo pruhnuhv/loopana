@@ -11,7 +11,11 @@ pub struct ArchInfo {
     pub arch: Arch,
 }
 
-impl Property for ArchInfo {}
+impl Property for ArchInfo {
+    fn property_id(&self) -> String {
+        "ArchInfo".to_string()
+    }
+}
 
 impl fmt::Display for ArchInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

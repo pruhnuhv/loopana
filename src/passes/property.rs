@@ -1,7 +1,9 @@
 use core::fmt;
 use std::collections::HashMap;
 
-pub trait Property: fmt::Display {}
+pub trait Property: fmt::Display {
+    fn property_id(&self) -> String;
+}
 
 pub trait PropertyHook {
     fn property_hook_id(&self) -> String;

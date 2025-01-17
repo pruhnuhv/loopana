@@ -11,7 +11,11 @@ pub struct MemAccessProp {
     pub accessed_dims: Vec<String>,
 }
 
-impl Property for MemAccessProp {}
+impl Property for MemAccessProp {
+    fn property_id(&self) -> String {
+        "MemAccessProp".to_string()
+    }
+}
 
 impl fmt::Display for MemAccessProp {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
