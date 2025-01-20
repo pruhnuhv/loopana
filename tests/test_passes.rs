@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use loopana::{
     passes::{
-        mem_access_analysis::MemAccessAnalysis, pass_pipeline::PassPipeline, workspace::Workspace,
+        mem_access_analysis::MemAccessAnalysis, pass_pipeline::PassPipeline, workspace::Workspace, free_dim_analysis::FreeDimAnalysis,
     },
     representations::loops::LoopNest,
 };
@@ -19,7 +19,9 @@ fn test_passes() {
     let mut workspace = Workspace::new(loop_nest, None);
     let mut pass_pipeline = PassPipeline::new();
     let mem_access_pass = MemAccessAnalysis;
+    let free_dim_pass = FreeDimAnalysis;
     pass_pipeline.register_pass(Box::new(mem_access_pass));
+    pass_pipeline.register_pass(Box::new(free_dim_pass));
     pass_pipeline.run(&mut workspace).unwrap();
 
     let output_file_path = Path::new(manifest).join("example/transformed_prob.ana");
