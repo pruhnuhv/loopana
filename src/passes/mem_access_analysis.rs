@@ -4,7 +4,7 @@ use crate::representations::{affine_expr::AffineExpr, instruction::Instruction};
 
 use super::property::Property;
 
-use super::passes::{InstPass, PassInfo, PassRun};
+use super::passes::{PassInfo, PassRun};
 use super::workspace::Workspace;
 
 pub struct MemAccessProp {
@@ -50,38 +50,29 @@ impl MemAccessAnalysis {
     }
 }
 
-impl InstPass for MemAccessAnalysis {
-    fn pass_inst(&self, inst: &Instruction) -> Vec<Box<dyn Property>> {
-        match inst {
-            Instruction::DataLoad(mem_access) => {
-                let accessed_dims = mem_access
-                    .addr
-                    .iter()
-                    .flat_map(|expr| Self::get_accesses_from_affine_expr(expr))
-                    .collect();
-                vec![Box::new(MemAccessProp { accessed_dims })]
-            }
-            Instruction::DataStore(mem_access) => {
-                let accessed_dims = mem_access
-                    .addr
-                    .iter()
-                    .flat_map(|expr| Self::get_accesses_from_affine_expr(expr))
-                    .collect();
-                vec![Box::new(MemAccessProp { accessed_dims })]
-            }
-            _ => {
-                vec![Box::new(MemAccessProp {
-                    accessed_dims: vec![],
-                })]
-            }
-        }
-    }
-}
-
 impl PassRun for MemAccessAnalysis {
     fn run(&self, workspace: &mut Workspace) -> Result<(), &'static str> {
-        <Self as InstPass>::run(self, workspace)
+        for inst in workspace.loop_nest.body.clone().iter() {
+            let properties = match inst {
+                Instruction::DataLoad(mem_access) | Instruction::DataStore(mem_access) => {
+                    let accessed_dims = mem_access
+                        .addr
+                        .iter()
+                        .flat_map(|expr| Self::get_accesses_from_affine_expr(expr))
+                        .collect();
+                    vec![Box::new(MemAccessProp { accessed_dims })]
+                }
+                _ => vec![Box::new(MemAccessProp {
+                    accessed_dims: vec![],
+                })],
+            };
+            for property in properties {
+                workspace.add_property(inst, property)
+            }
+        }
+        Ok(())
     }
+    
 
     fn setup(&mut self, _workspace: &mut Workspace) -> Result<(), &'static str> {
         Ok(())
