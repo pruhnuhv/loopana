@@ -22,19 +22,25 @@ Body:
 
  - Ra <= A[m][tk][y]
 	> Accessed Dims: {m, tk, y}
+ 	> Free Dims: {tn, x, simd}
  
  - cmp Rcmp Ra, $0
 	> Accessed Dims: {}
+ 	> Free Dims: {m, tk, tn, x, y, simd}
  
  - Rb <= B[tk][y][tn][x][simd] (LE Rcmp)
 	> Accessed Dims: {tk, y, tn, x, simd}
+ 	> Free Dims: {m}
  
  - Rc <= C[m][tn][x][simd] (LE Rcmp)
 	> Accessed Dims: {m, tn, x, simd}
+ 	> Free Dims: {tk, y}
  
  - mac Rc1 Ra, Rb, Rc (LE Rcmp)
 	> Accessed Dims: {}
+ 	> Free Dims: {m, tk, tn, x, y, simd}
  
  - Rc1 => C[m][tn][x][simd] (LE Rcmp)
 	> Accessed Dims: {m, tn, x, simd}
+ 	> Free Dims: {tk, y}
  
